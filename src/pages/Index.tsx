@@ -9,7 +9,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const heroBanners = [
   {
-    title: "Perjalanan Nyaman ke Bandung",
+    title: "Perjalanan Nyaman Selama Liburan di Medan",
     subtitle: "Shuttle mulai dari Rp 120.000 dengan armada premium",
     bg: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=500&fit=crop",
   },
@@ -140,7 +140,7 @@ const Index = () => {
             <div className="grid grid-cols-2 gap-3">
               <Link
                 to="/shuttle"
-                className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-traveloka-blue-light transition-all group"
+                className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-pyu-go-blue-light transition-all group"
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20">
                   <Bus className="w-6 h-6 text-primary" />
@@ -152,7 +152,7 @@ const Index = () => {
               </Link>
               <Link
                 to="/ride"
-                className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-traveloka-blue-light transition-all group"
+                className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-pyu-go-blue-light transition-all group"
               >
                 <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20">
                   <Car className="w-6 h-6 text-primary" />
@@ -192,7 +192,7 @@ const Index = () => {
               <h3 className="font-semibold text-foreground truncate">Jakarta - Bandung (PP)</h3>
               <p className="text-xs text-muted-foreground mb-2">Executive Class • Hiace Premio</p>
               <div className="flex items-center gap-1 mb-2">
-                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <Star className="w-4 h-4 fill-pyu-go-orange text-pyu-go-orange" />
                 <span className="text-sm font-medium">4.9</span>
                 <span className="text-xs text-muted-foreground">(2.5k ulasan)</span>
               </div>
@@ -215,7 +215,7 @@ const Index = () => {
               <h3 className="font-semibold text-foreground truncate">Surabaya - Malang</h3>
               <p className="text-xs text-muted-foreground mb-2">Semi Executive • Mini Bus</p>
               <div className="flex items-center gap-1 mb-2">
-                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <Star className="w-4 h-4 fill-pyu-go-orange text-pyu-go-orange" />
                 <span className="text-sm font-medium">4.8</span>
                 <span className="text-xs text-muted-foreground">(1.8k ulasan)</span>
               </div>
@@ -238,7 +238,7 @@ const Index = () => {
               <h3 className="font-semibold text-foreground truncate">Yogyakarta - Solo</h3>
               <p className="text-xs text-muted-foreground mb-2">Regular Class • Mini Car</p>
               <div className="flex items-center gap-1 mb-2">
-                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <Star className="w-4 h-4 fill-pyu-go-orange text-pyu-go-orange" />
                 <span className="text-sm font-medium">4.7</span>
                 <span className="text-xs text-muted-foreground">(950 ulasan)</span>
               </div>
@@ -255,7 +255,7 @@ const Index = () => {
       <section className="container mx-auto px-4 mb-10">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl md:text-2xl font-bold text-foreground flex items-center gap-2">
-            <Tag className="w-5 h-5 text-traveloka-orange" /> Promo Terkini
+            <Tag className="w-5 h-5 text-pyu-go-orange" /> Promo Terkini
           </h2>
           <Link to="/promos" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
             Lihat Semua <ArrowRight className="w-4 h-4" />

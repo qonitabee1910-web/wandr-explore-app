@@ -11,8 +11,8 @@ interface RideCompletedProps {
 export const RideCompleted = ({ onFinish }: RideCompletedProps) => {
   return (
     <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="flex-1 flex flex-col items-center justify-center">
-      <div className="w-20 h-20 rounded-full bg-traveloka-green/20 flex items-center justify-center mb-6">
-        <CheckCircle2 className="w-10 h-10 text-traveloka-green" />
+      <div className="w-20 h-20 rounded-full bg-pyu-go-green/20 flex items-center justify-center mb-6">
+        <CheckCircle2 className="w-10 h-10 text-pyu-go-green" />
       </div>
       <h2 className="text-2xl font-bold mb-2">Sampai di Tujuan!</h2>
       <p className="text-muted-foreground text-center mb-8">Terima kasih telah menggunakan Ride.</p>
@@ -22,7 +22,7 @@ export const RideCompleted = ({ onFinish }: RideCompletedProps) => {
           <p className="font-medium">Bagaimana perjalanan Anda?</p>
           <div className="flex justify-center gap-2">
             {[1, 2, 3, 4, 5].map((s) => (
-              <Star key={s} className="w-8 h-8 text-traveloka-orange cursor-pointer hover:fill-traveloka-orange" />
+              <Star key={s} className="w-8 h-8 text-pyu-go-orange cursor-pointer hover:fill-pyu-go-orange" />
             ))}
           </div>
           <Input placeholder="Tulis ulasan (opsional)..." className="mt-4" />

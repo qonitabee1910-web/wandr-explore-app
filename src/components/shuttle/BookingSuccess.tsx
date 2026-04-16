@@ -13,8 +13,8 @@ export const BookingSuccess: React.FC = () => {
   return (
     <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 max-w-lg mx-auto">
       <div className="text-center space-y-4">
-        <div className="w-24 h-24 rounded-full bg-traveloka-green/20 flex items-center justify-center mx-auto shadow-lg">
-          <CheckCircle2 className="w-12 h-12 text-traveloka-green" />
+        <div className="w-24 h-24 rounded-full bg-pyu-go-green/20 flex items-center justify-center mx-auto shadow-lg">
+          <CheckCircle2 className="w-12 h-12 text-pyu-go-green" />
         </div>
         <div className="space-y-2">
           <h2 className="text-3xl font-bold text-foreground">Pembayaran Sukses!</h2>
@@ -81,7 +81,7 @@ export const BookingSuccess: React.FC = () => {
            <Separator className="bg-muted-foreground/10" />
 
            <div className="space-y-4">
-              <Button className="w-full py-7 rounded-2xl font-bold text-lg bg-traveloka-green hover:bg-traveloka-green/90 shadow-xl shadow-traveloka-green/20">
+              <Button className="w-full py-7 rounded-2xl font-bold text-lg bg-pyu-go-green hover:bg-pyu-go-green/90 shadow-xl shadow-pyu-go-green/20">
                  Download Ticket <Download className="w-5 h-5 ml-2" />
               </Button>
               <Button variant="ghost" className="w-full font-bold text-muted-foreground" onClick={resetBooking}>

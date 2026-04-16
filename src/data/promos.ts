@@ -14,8 +14,8 @@ export const promos: Promo[] = [
   },
   {
     id: "2",
-    title: "Shuttle Hemat ke Bandung",
-    description: "Tiket shuttle ke Bandung mulai dari Rp 120.000. Booking sekarang!",
+    title: "Shuttle Hemat Ke Kualanamu Airport",
+    description: "Tiket shuttle ke Kualanamu Airport mulai dari Rp 120.000. Booking sekarang!",
     discount: "35%",
     category: "Shuttle",
     validUntil: "2026-05-15",
@@ -37,7 +37,7 @@ export const promos: Promo[] = [
   {
     id: "4",
     title: "Member Exclusive: Extra 15%",
-    description: "Diskon tambahan 15% untuk member Traveloka. Berlaku semua produk.",
+    description: "Diskon tambahan 15% untuk member PYU-GO. Berlaku semua produk.",
     discount: "15%",
     category: "All",
     validUntil: "2026-06-30",

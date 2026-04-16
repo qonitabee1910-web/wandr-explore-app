@@ -55,7 +55,7 @@ const HotelDetail = () => {
                 </p>
               </div>
               <div className="flex items-center gap-1 bg-primary/10 px-3 py-1 rounded-full">
-                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <Star className="w-4 h-4 fill-pyu-go-orange text-pyu-go-orange" />
                 <span className="text-sm font-bold">{hotel.rating}</span>
               </div>
             </div>

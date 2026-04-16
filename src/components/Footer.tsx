@@ -4,7 +4,7 @@ const Footer = () => (
   <footer className="bg-foreground text-background py-10 hidden md:block">
     <div className="container mx-auto px-4 grid grid-cols-2 md:grid-cols-4 gap-8 text-sm">
       <div>
-        <h4 className="font-bold text-lg mb-3">traveloka</h4>
+        <h4 className="font-bold text-lg mb-3">PYU-GO</h4>
         <p className="text-background/70 leading-relaxed">
           Platform booking shuttle & ride terpercaya di Indonesia.
         </p>
@@ -35,7 +35,7 @@ const Footer = () => (
       </div>
     </div>
     <div className="container mx-auto px-4 mt-8 pt-6 border-t border-background/20 text-center text-xs text-background/50">
-      © 2026 Traveloka Clone. UI Demo Only.
+      © 2026 PYU-GO. Ride, Shuttle & Hotel Booking Platform.
     </div>
   </footer>
 );

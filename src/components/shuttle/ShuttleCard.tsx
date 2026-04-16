@@ -43,7 +43,7 @@ export const ShuttleCard = ({ shuttle }: ShuttleCardProps) => {
             <div className="w-full border-t border-border relative my-1">
               <ArrowRight className="w-4 h-4 text-primary absolute -right-1 -top-2" />
             </div>
-            <p className="text-xs text-traveloka-green font-medium">
+            <p className="text-xs text-pyu-go-green font-medium">
               {shuttle.transit === 0 ? "Langsung" : `${shuttle.transit} Transit`}
             </p>
           </div>

@@ -78,7 +78,7 @@ export const SeatSelection: React.FC = () => {
                   
                   {/* Seat availability dot */}
                   {seat.isAvailable && !isDriver && !isSelected && (
-                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-traveloka-green" />
+                    <div className="absolute top-1 right-1 w-1.5 h-1.5 rounded-full bg-pyu-go-green" />
                   )}
                 </motion.div>
               );

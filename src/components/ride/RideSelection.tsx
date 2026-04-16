@@ -72,7 +72,7 @@ export const RideSelection = ({
               <h3 className="font-black text-xl">Pilih Layanan</h3>
               <p className="text-xs text-muted-foreground font-medium">Estimasi tiba dalam 5-10 menit</p>
             </div>
-            <Badge variant="secondary" className="bg-traveloka-blue-light text-primary border-none font-bold">PROMO AKTIF</Badge>
+            <Badge variant="secondary" className="bg-pyu-go-blue-light text-primary border-none font-bold">PROMO AKTIF</Badge>
           </div>
 
           <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1 scrollbar-hide">

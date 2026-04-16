@@ -21,8 +21,8 @@ const Booking = () => {
     return (
       <Layout>
         <div className="container mx-auto px-4 py-10 max-w-lg text-center">
-          <div className="w-20 h-20 mx-auto rounded-full bg-traveloka-green/20 flex items-center justify-center mb-4">
-            <span className="text-4xl text-traveloka-green">✓</span>
+          <div className="w-20 h-20 mx-auto rounded-full bg-pyu-go-green/20 flex items-center justify-center mb-4">
+            <span className="text-4xl text-pyu-go-green">✓</span>
           </div>
           <h1 className="text-2xl font-bold text-foreground mb-2">Pemesanan Berhasil!</h1>
           <p className="text-muted-foreground mb-2">Terima kasih telah memilih layanan kami.</p>

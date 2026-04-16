@@ -5,9 +5,9 @@ import { Booking } from "@/types";
 import { formatCurrency } from "@/data/dummyData";
 
 const statusColor: Record<string, string> = {
-  Confirmed: "bg-traveloka-green text-white",
+  Confirmed: "bg-pyu-go-green text-white",
   Completed: "bg-muted text-muted-foreground",
-  Pending: "bg-traveloka-orange text-white",
+  Pending: "bg-pyu-go-orange text-white",
 };
 
 interface BookingItemProps {

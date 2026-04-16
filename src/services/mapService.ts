@@ -55,7 +55,7 @@ export const MapService = {
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Traveloka-Clone-Demo-App'
+          'User-Agent': 'PYU-GO-Demo-App'
         }
       });
       if (!response.ok) throw new Error("Gagal melakukan geocoding");
@@ -90,7 +90,7 @@ export const MapService = {
     try {
       const response = await fetch(url, {
         headers: {
-          'User-Agent': 'Traveloka-Clone-Demo-App'
+          'User-Agent': 'PYU-GO-Demo-App'
         }
       });
       const data = await response.json();

@@ -46,7 +46,7 @@ export const ServiceSelection: React.FC = () => {
               <div className="grid grid-cols-2 gap-2">
                 {srv.amenities.map(amenity => (
                   <div key={amenity} className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <CheckCircle2 className="w-4 h-4 text-traveloka-green" /> {amenity}
+                    <CheckCircle2 className="w-4 h-4 text-pyu-go-green" /> {amenity}
                   </div>
                 ))}
               </div>

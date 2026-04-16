@@ -20,7 +20,7 @@ export const RideActive = ({ status, destination, onCancel }: RideActiveProps) =
             <div className="w-16 h-16 rounded-full bg-white shadow-xl flex items-center justify-center mb-4">
               <Car className="w-8 h-8 text-primary animate-pulse" />
             </div>
-            <Badge className="bg-traveloka-green">{status}</Badge>
+            <Badge className="bg-pyu-go-green">{status}</Badge>
          </div>
       </div>
 
@@ -36,7 +36,7 @@ export const RideActive = ({ status, destination, onCancel }: RideActiveProps) =
                 <Badge variant="outline" className="text-[10px] h-5">D 1234 ABC</Badge>
               </div>
               <div className="flex items-center gap-1">
-                <Star className="w-3 h-3 fill-traveloka-orange text-traveloka-orange" />
+                <Star className="w-3 h-3 fill-pyu-go-orange text-pyu-go-orange" />
                 <span className="text-xs font-medium">4.9 • Toyota Avanza Putih</span>
               </div>
             </div>

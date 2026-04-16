@@ -17,7 +17,7 @@ const Navbar = () => {
     <header className="sticky top-0 z-50 bg-primary text-primary-foreground shadow-md">
       <div className="container mx-auto flex items-center justify-between h-16 px-4">
         <Link to="/" className="text-2xl font-bold tracking-tight">
-          traveloka
+          PYU-GO
         </Link>
 
         {/* Desktop nav */}

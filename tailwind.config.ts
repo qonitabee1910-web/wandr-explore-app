@@ -50,11 +50,11 @@ export default {
           DEFAULT: "hsl(var(--card))",
           foreground: "hsl(var(--card-foreground))",
         },
-        traveloka: {
-          blue: "hsl(var(--traveloka-blue))",
-          "blue-light": "hsl(var(--traveloka-blue-light))",
-          orange: "hsl(var(--traveloka-orange))",
-          green: "hsl(var(--traveloka-green))",
+        "pyu-go": {
+          blue: "hsl(var(--pyu-go-blue))",
+          "blue-light": "hsl(var(--pyu-go-blue-light))",
+          orange: "hsl(var(--pyu-go-orange))",
+          green: "hsl(var(--pyu-go-green))",
         },
         sidebar: {
           DEFAULT: "hsl(var(--sidebar-background))",

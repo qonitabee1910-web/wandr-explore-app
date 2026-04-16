@@ -19,7 +19,7 @@ export const HotelCard = ({ hotel }: HotelCardProps) => {
             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             loading="lazy"
           />
-          <div className="absolute top-3 right-3 bg-traveloka-orange text-white text-xs font-bold px-2 py-1 rounded-full">
+          <div className="absolute top-3 right-3 bg-pyu-go-orange text-white text-xs font-bold px-2 py-1 rounded-full">
             {Math.round(((hotel.originalPrice - hotel.price) / hotel.originalPrice) * 100)}% OFF
           </div>
         </div>
@@ -29,7 +29,7 @@ export const HotelCard = ({ hotel }: HotelCardProps) => {
             <MapPin className="w-3 h-3" /> {hotel.city}
           </p>
           <div className="flex items-center gap-1 mt-2">
-            <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+            <Star className="w-4 h-4 fill-pyu-go-orange text-pyu-go-orange" />
             <span className="text-sm font-medium">{hotel.rating}</span>
             <span className="text-xs text-muted-foreground">({hotel.reviews})</span>
             <span className="ml-auto text-xs text-muted-foreground">{"★".repeat(hotel.stars)}</span>

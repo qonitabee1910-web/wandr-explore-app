@@ -1,4 +1,4 @@
-# WANDR-EXPLORE-APP: COMPREHENSIVE PROJECT ANALYSIS
+# PYU-GO: COMPREHENSIVE PROJECT ANALYSIS
 
 **Analysis Date:** April 16, 2026  
 **Project Type:** Traveloka-like Travel & Transportation Booking Platform  

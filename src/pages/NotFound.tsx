@@ -9,10 +9,10 @@ const NotFound = () => {
 
   useEffect(() => {
     // SEO Meta Tags
-    document.title = "404 - Coming Soon | Traveloka Clone";
+    document.title = "404 - Coming Soon | PYU-GO";
     const metaDescription = document.querySelector('meta[name="description"]');
     if (metaDescription) {
-      metaDescription.setAttribute("content", "Halaman ini sedang dalam pengembangan. Sesuatu yang luar biasa akan segera hadir di Traveloka Clone.");
+      metaDescription.setAttribute("content", "Halaman ini sedang dalam pengembangan. Sesuatu yang luar biasa akan segera hadir di PYU-GO.");
     }
     
     // Tracking analytics (mocked)
@@ -134,7 +134,7 @@ const NotFound = () => {
         className="absolute bottom-8 text-center w-full px-4"
       >
         <p className="text-xs font-bold uppercase tracking-[0.3em] text-foreground">
-          Under Development — Traveloka Clone v2.0
+          Under Development — PYU-GO v2.0
         </p>
       </motion.div>
     </div>
