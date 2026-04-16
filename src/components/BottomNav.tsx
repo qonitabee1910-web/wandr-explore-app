@@ -1,9 +1,8 @@
 import { Link, useLocation } from "react-router-dom";
-import { Home, Building2, Bus, Car, Tag, User } from "lucide-react";
+import { Home, Bus, Car, Tag, User } from "lucide-react";
 
 const navItems = [
   { path: "/", label: "Home", icon: Home },
-  { path: "/hotels", label: "Hotel", icon: Building2 },
   { path: "/shuttle", label: "Shuttle", icon: Bus },
   { path: "/ride", label: "Ride", icon: Car },
   { path: "/promos", label: "Promo", icon: Tag },

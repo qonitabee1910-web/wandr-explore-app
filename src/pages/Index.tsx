@@ -9,19 +9,19 @@ import { Card, CardContent } from "@/components/ui/card";
 
 const heroBanners = [
   {
-    title: "Liburan Hemat ke Bali",
-    subtitle: "Diskon hingga 50% untuk hotel & shuttle",
-    bg: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=1200&h=500&fit=crop",
-  },
-  {
-    title: "Weekend Getaway Bandung",
-    subtitle: "Shuttle mulai dari Rp 120.000",
+    title: "Perjalanan Nyaman ke Bandung",
+    subtitle: "Shuttle mulai dari Rp 120.000 dengan armada premium",
     bg: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=1200&h=500&fit=crop",
   },
   {
-    title: "Ride & Explore",
-    subtitle: "Perjalanan aman dengan Ride",
+    title: "Ride & Explore Kota",
+    subtitle: "Perjalanan aman dan cepat dengan Ride Hailing",
     bg: "https://images.unsplash.com/photo-1555881400-74d7acaacd8b?w=1200&h=500&fit=crop",
+  },
+  {
+    title: "Promo Spesial Shuttle",
+    subtitle: "Diskon hingga 30% untuk pemesanan via aplikasi",
+    bg: "https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=1200&h=500&fit=crop",
   },
 ];
 
@@ -85,11 +85,6 @@ const Index = () => {
                 className="flex flex-wrap gap-3"
               >
                 <Button asChild size="lg" className="rounded-full font-semibold">
-                  <Link to="/hotels">
-                    <Building2 className="w-4 h-4 mr-1" /> Cari Hotel
-                  </Link>
-                </Button>
-                <Button asChild size="lg" variant="secondary" className="rounded-full font-semibold">
                   <Link to="/shuttle">
                     <Bus className="w-4 h-4 mr-1" /> Cari Shuttle
                   </Link>
@@ -142,19 +137,7 @@ const Index = () => {
       <section className="container mx-auto px-4 -mt-8 relative z-10 mb-10">
         <Card className="shadow-lg">
           <CardContent className="p-4 md:p-6">
-            <div className="grid grid-cols-3 gap-3">
-              <Link
-                to="/hotels"
-                className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-traveloka-blue-light transition-all group"
-              >
-                <div className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center group-hover:bg-primary/20">
-                  <Building2 className="w-6 h-6 text-primary" />
-                </div>
-                <div className="text-center md:text-left">
-                  <p className="font-semibold text-foreground">Hotel</p>
-                  <p className="text-[10px] md:text-xs text-muted-foreground hidden md:block">Cari & pesan hotel</p>
-                </div>
-              </Link>
+            <div className="grid grid-cols-2 gap-3">
               <Link
                 to="/shuttle"
                 className="flex flex-col md:flex-row items-center gap-3 p-4 rounded-xl border border-border hover:border-primary hover:bg-traveloka-blue-light transition-all group"
@@ -184,50 +167,87 @@ const Index = () => {
         </Card>
       </section>
 
-      {/* Popular Hotels */}
+      {/* Shuttle Populer Section */}
       <section className="container mx-auto px-4 mb-10">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl md:text-2xl font-bold text-foreground">Hotel Populer</h2>
-          <Link to="/hotels" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
+          <h2 className="text-xl md:text-2xl font-bold text-foreground">Rute Populer</h2>
+          <Link to="/shuttle" className="text-primary text-sm font-medium flex items-center gap-1 hover:underline">
             Lihat Semua <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {hotels.slice(0, 3).map((hotel) => (
-            <Link key={hotel.id} to={`/hotels/${hotel.id}`}>
-              <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
-                <div className="relative h-48 overflow-hidden">
-                  <img
-                    src={hotel.image}
-                    alt={hotel.name}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    loading="lazy"
-                  />
-                  <div className="absolute top-3 right-3 bg-traveloka-orange text-white text-xs font-bold px-2 py-1 rounded-full">
-                    {Math.round(((hotel.originalPrice - hotel.price) / hotel.originalPrice) * 100)}% OFF
-                  </div>
-                </div>
-                <CardContent className="p-4">
-                  <h3 className="font-semibold text-foreground truncate">{hotel.name}</h3>
-                  <p className="text-xs text-muted-foreground mb-2">{hotel.city}</p>
-                  <div className="flex items-center gap-1 mb-2">
-                    <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
-                    <span className="text-sm font-medium">{hotel.rating}</span>
-                    <span className="text-xs text-muted-foreground">({hotel.reviews} ulasan)</span>
-                  </div>
-                  <div className="flex items-baseline gap-2">
-                    <span className="text-xs text-muted-foreground line-through">
-                      {formatCurrency(hotel.originalPrice)}
-                    </span>
-                    <span className="text-primary font-bold">
-                      {formatCurrency(hotel.price)}
-                    </span>
-                    <span className="text-xs text-muted-foreground">/malam</span>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1594132411604-09756157e800?w=800&h=600&fit=crop"
+                alt="Jakarta - Bandung"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+              <div className="absolute top-3 right-3 bg-primary text-white text-xs font-bold px-2 py-1 rounded-full">
+                BEST SELLER
+              </div>
+            </div>
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-foreground truncate">Jakarta - Bandung (PP)</h3>
+              <p className="text-xs text-muted-foreground mb-2">Executive Class • Hiace Premio</p>
+              <div className="flex items-center gap-1 mb-2">
+                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <span className="text-sm font-medium">4.9</span>
+                <span className="text-xs text-muted-foreground">(2.5k ulasan)</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-muted-foreground">Mulai dari</span>
+                <span className="text-primary font-bold">Rp 120.000</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1582650625119-3a31f8fa2699?w=800&h=600&fit=crop"
+                alt="Surabaya - Malang"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+            </div>
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-foreground truncate">Surabaya - Malang</h3>
+              <p className="text-xs text-muted-foreground mb-2">Semi Executive • Mini Bus</p>
+              <div className="flex items-center gap-1 mb-2">
+                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <span className="text-sm font-medium">4.8</span>
+                <span className="text-xs text-muted-foreground">(1.8k ulasan)</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-muted-foreground">Mulai dari</span>
+                <span className="text-primary font-bold">Rp 85.000</span>
+              </div>
+            </CardContent>
+          </Card>
+          <Card className="overflow-hidden hover:shadow-lg transition-shadow group">
+            <div className="relative h-48 overflow-hidden">
+              <img
+                src="https://images.unsplash.com/photo-1605649487212-47bdab064df7?w=800&h=600&fit=crop"
+                alt="Yogyakarta - Solo"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                loading="lazy"
+              />
+            </div>
+            <CardContent className="p-4">
+              <h3 className="font-semibold text-foreground truncate">Yogyakarta - Solo</h3>
+              <p className="text-xs text-muted-foreground mb-2">Regular Class • Mini Car</p>
+              <div className="flex items-center gap-1 mb-2">
+                <Star className="w-4 h-4 fill-traveloka-orange text-traveloka-orange" />
+                <span className="text-sm font-medium">4.7</span>
+                <span className="text-xs text-muted-foreground">(950 ulasan)</span>
+              </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-xs text-muted-foreground">Mulai dari</span>
+                <span className="text-primary font-bold">Rp 45.000</span>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </section>
 

@@ -1,5 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
-import { Building2, Bus, Car, Tag, User, Menu, X } from "lucide-react";
+import { Bus, Car, Tag, User, Menu, X } from "lucide-react";
 import { useState } from "react";
 
 const Navbar = () => {
@@ -7,7 +7,6 @@ const Navbar = () => {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const links = [
-    { path: "/hotels", label: "Hotel", icon: Building2 },
     { path: "/shuttle", label: "Shuttle", icon: Bus },
     { path: "/ride", label: "Ride", icon: Car },
     { path: "/promos", label: "Promo", icon: Tag },

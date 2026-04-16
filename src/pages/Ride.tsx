@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { ArrowLeft } from "lucide-react";
 import Layout from "@/components/Layout";
@@ -7,10 +7,18 @@ import { RideSearch } from "@/components/ride/RideSearch";
 import { RideSelection } from "@/components/ride/RideSelection";
 import { RideActive } from "@/components/ride/RideActive";
 import { RideCompleted } from "@/components/ride/RideCompleted";
+import { GeoLocation, RouteInfo } from "@/types/maps";
+import { MapService } from "@/services/mapService";
 
 const Ride = () => {
-  const [pickup, setPickup] = useState("Lokasi Saya (Gedung Sate)");
-  const [destination, setDestination] = useState("");
+  const [pickup, setPickup] = useState<GeoLocation | null>({
+    lat: -6.9025,
+    lng: 107.6188,
+    name: "Gedung Sate",
+    address: "Jl. Diponegoro No.22, Bandung"
+  });
+  const [destination, setDestination] = useState<GeoLocation | null>(null);
+  const [route, setRoute] = useState<RouteInfo | null>(null);
   const [selectedRide, setSelectedRide] = useState(rides[0].id);
   const [step, setStep] = useState<"search" | "estimating" | "finding" | "active" | "completed">("search");
   const [rideType, setRideType] = useState<"instant" | "scheduled">("instant");
@@ -21,7 +29,7 @@ const Ride = () => {
   const handleSearch = () => {
     if (!destination) return;
     setStep("estimating");
-    setTimeout(() => setStep("finding"), 1500);
+    setTimeout(() => setStep("finding"), 1000);
   };
 
   const handleConfirm = () => {
@@ -36,12 +44,12 @@ const Ride = () => {
 
   return (
     <Layout>
-      <div className="bg-primary text-primary-foreground py-4 sticky top-0 z-20">
+      <div className="bg-primary text-primary-foreground py-4 sticky top-0 z-20 shadow-md">
         <div className="container mx-auto px-4 flex items-center gap-3">
           <Link to="/">
             <ArrowLeft className="w-5 h-5" />
           </Link>
-          <h1 className="text-lg font-bold">Ride Hailing</h1>
+          <h1 className="text-lg font-bold tracking-tight">Ride Hailing</h1>
         </div>
       </div>
 
@@ -60,8 +68,14 @@ const Ride = () => {
 
         {step === "estimating" && (
           <div className="flex-1 flex flex-col items-center justify-center space-y-4">
-            <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-            <p className="text-muted-foreground animate-pulse">Menghitung estimasi biaya...</p>
+            <div className="relative w-20 h-20">
+              <div className="absolute inset-0 border-4 border-primary/20 rounded-full" />
+              <div className="absolute inset-0 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+            <div className="text-center space-y-1">
+              <p className="font-bold text-lg">Menganalisis Rute</p>
+              <p className="text-muted-foreground animate-pulse text-sm">Menghitung estimasi biaya & waktu...</p>
+            </div>
           </div>
         )}
 
@@ -70,6 +84,8 @@ const Ride = () => {
             rides={rides}
             pickup={pickup}
             destination={destination}
+            route={route}
+            setRoute={setRoute}
             selectedRide={selectedRide}
             setSelectedRide={setSelectedRide}
             activeRide={activeRide}
@@ -80,7 +96,7 @@ const Ride = () => {
         {step === "active" && (
           <RideActive 
             status={status}
-            destination={destination}
+            destination={destination?.name || destination?.address || "Tujuan"}
             onCancel={() => setStep("search")}
           />
         )}

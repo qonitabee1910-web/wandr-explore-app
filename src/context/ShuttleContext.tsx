@@ -1,5 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ShuttleBookingState, Rayon, ShuttleSchedule, PickupPoint, ShuttleService, ShuttleVehicle } from '../types/shuttle';
+import { FareService } from '../services/fareService';
+import { PassengerCount, PassengerCategory } from '../types/pricing';
 
 interface ShuttleContextType {
   state: ShuttleBookingState;
@@ -9,6 +11,9 @@ interface ShuttleContextType {
   setService: (service: ShuttleService) => void;
   setVehicle: (vehicle: ShuttleVehicle) => void;
   toggleSeat: (seatId: string) => void;
+  setPassengers: (passengers: PassengerCount[]) => void;
+  setPromoCode: (code: string | null) => void;
+  setRoundTrip: (isRoundTrip: boolean) => void;
   nextStep: () => void;
   prevStep: () => void;
   resetBooking: () => void;
@@ -24,10 +29,14 @@ const initialState: ShuttleBookingState = {
   selectedService: null,
   selectedVehicle: null,
   selectedSeats: [],
+  passengerCounts: [{ category: 'adult', count: 1 }],
   totalPrice: 0,
+  fareBreakdown: null,
   bookingStatus: 'draft',
   paymentMethod: null,
   ticketId: null,
+  isRoundTrip: false,
+  promoCode: null,
 };
 
 const ShuttleContext = createContext<ShuttleContextType | undefined>(undefined);
@@ -35,20 +44,42 @@ const ShuttleContext = createContext<ShuttleContextType | undefined>(undefined);
 export const ShuttleProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [state, setState] = useState<ShuttleBookingState>(initialState);
 
+  // Real-time fare calculation
   useEffect(() => {
-    let total = 0;
-    if (state.selectedRayon) total += state.selectedRayon.basePrice;
-    if (state.selectedService) {
-      total = total * state.selectedService.priceMultiplier;
-    }
-    if (state.selectedVehicle) total += state.selectedVehicle.basePrice;
-    
-    // Multiply by number of seats
-    const seatCount = state.selectedSeats.length || 1;
-    total = total * seatCount;
+    const updateFare = async () => {
+      if (state.selectedRayon && state.selectedService && state.selectedVehicle) {
+        try {
+          const estimate = await FareService.getEstimate({
+            rayonId: state.selectedRayon.id,
+            distance: state.selectedPickupPoint?.distance ? state.selectedPickupPoint.distance / 1000 : 50, // Default 50km if not selected
+            serviceTier: state.selectedService.tier,
+            vehicleType: state.selectedVehicle.type,
+            passengers: state.passengerCounts,
+            promoCode: state.promoCode || undefined,
+            isRoundTrip: state.isRoundTrip
+          });
+          
+          setState(prev => ({ 
+            ...prev, 
+            totalPrice: estimate.totalFare,
+            fareBreakdown: estimate 
+          }));
+        } catch (error) {
+          console.error("Fare calculation failed:", error);
+        }
+      }
+    };
 
-    setState(prev => ({ ...prev, totalPrice: total }));
-  }, [state.selectedRayon, state.selectedService, state.selectedVehicle, state.selectedSeats]);
+    updateFare();
+  }, [
+    state.selectedRayon, 
+    state.selectedService, 
+    state.selectedVehicle, 
+    state.selectedPickupPoint,
+    state.passengerCounts,
+    state.promoCode,
+    state.isRoundTrip
+  ]);
 
   const setRayon = (rayon: Rayon) => {
     setState(prev => ({ 
@@ -80,8 +111,23 @@ export const ShuttleProvider: React.FC<{ children: React.ReactNode }> = ({ child
       const newSeats = isSelected 
         ? prev.selectedSeats.filter(id => id !== seatId)
         : [...prev.selectedSeats, seatId];
+      
+      // Sync passenger counts with seat selection if needed
+      // For now, we'll just update the total seats
       return { ...prev, selectedSeats: newSeats };
     });
+  };
+
+  const setPassengers = (passengers: PassengerCount[]) => {
+    setState(prev => ({ ...prev, passengerCounts: passengers }));
+  };
+
+  const setPromoCode = (code: string | null) => {
+    setState(prev => ({ ...prev, promoCode: code }));
+  };
+
+  const setRoundTrip = (isRoundTrip: boolean) => {
+    setState(prev => ({ ...prev, isRoundTrip }));
   };
 
   const nextStep = () => setState(prev => ({ ...prev, step: prev.step + 1 }));
@@ -105,7 +151,8 @@ export const ShuttleProvider: React.FC<{ children: React.ReactNode }> = ({ child
   return (
     <ShuttleContext.Provider value={{ 
       state, setRayon, setSchedule, setPickupPoint, setService, 
-      setVehicle, toggleSeat, nextStep, prevStep, resetBooking,
+      setVehicle, toggleSeat, setPassengers, setPromoCode, setRoundTrip,
+      nextStep, prevStep, resetBooking,
       finalizeBooking, setPaymentMethod
     }}>
       {children}

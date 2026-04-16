@@ -1,3 +1,5 @@
+import { PassengerCount } from "./pricing";
+
 export type ShuttleServiceTier = 'Regular' | 'Semi Executive' | 'Executive';
 
 export type VehicleType = 'Mini Car' | 'SUV' | 'Hiace';
@@ -58,8 +60,12 @@ export interface ShuttleBookingState {
   selectedService: ShuttleService | null;
   selectedVehicle: ShuttleVehicle | null;
   selectedSeats: string[];
+  passengerCounts: PassengerCount[];
   totalPrice: number;
+  fareBreakdown: any | null; // Detailed calculation
   bookingStatus: 'draft' | 'validating' | 'confirmed' | 'paid' | 'completed';
   paymentMethod: string | null;
   ticketId: string | null;
+  isRoundTrip: boolean;
+  promoCode: string | null;
 }

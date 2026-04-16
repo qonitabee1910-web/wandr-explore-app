@@ -1,4 +1,175 @@
 import { Rayon, ShuttleService, ShuttleVehicle, ShuttleSchedule } from "../types/shuttle";
+import { FareRule, SurgeRule, PromoCode, FareCalculationResult, PassengerCount } from "../types/pricing";
+import { FareCalculator } from "../lib/fareCalculation";
+import { ShuttleServiceTier, VehicleType } from "../types/shuttle";
+
+// ============================================================================
+// SHUTTLE FARE RULES & CONFIGURATION
+// ============================================================================
+
+/**
+ * Shuttle-specific fare rules for different rayons
+ * Base price + per-km rate for shuttle services to airport
+ */
+export const SHUTTLE_FARE_RULES: FareRule[] = [
+  {
+    id: "shuttle-rayon-a",
+    rayonId: "rayon-a",
+    baseFare: 50000,
+    perKmRate: 2500,
+    minCharge: 120000,
+    serviceMultipliers: {
+      'Regular': 1.0,
+      'Semi Executive': 1.5,
+      'Executive': 2.0
+    },
+    vehicleMultipliers: {
+      'Mini Car': 1.0,
+      'SUV': 1.2,
+      'Hiace': 1.5
+    },
+    passengerMultipliers: {
+      'adult': 1.0,
+      'child': 0.75,
+      'senior': 0.85
+    }
+  },
+  {
+    id: "shuttle-rayon-b",
+    rayonId: "rayon-b",
+    baseFare: 50000,
+    perKmRate: 2500,
+    minCharge: 130000,
+    serviceMultipliers: {
+      'Regular': 1.0,
+      'Semi Executive': 1.5,
+      'Executive': 2.0
+    },
+    vehicleMultipliers: {
+      'Mini Car': 1.0,
+      'SUV': 1.2,
+      'Hiace': 1.5
+    },
+    passengerMultipliers: {
+      'adult': 1.0,
+      'child': 0.75,
+      'senior': 0.85
+    }
+  },
+  {
+    id: "shuttle-rayon-c",
+    rayonId: "rayon-c",
+    baseFare: 50000,
+    perKmRate: 2500,
+    minCharge: 125000,
+    serviceMultipliers: {
+      'Regular': 1.0,
+      'Semi Executive': 1.5,
+      'Executive': 2.0
+    },
+    vehicleMultipliers: {
+      'Mini Car': 1.0,
+      'SUV': 1.2,
+      'Hiace': 1.5
+    },
+    passengerMultipliers: {
+      'adult': 1.0,
+      'child': 0.75,
+      'senior': 0.85
+    }
+  },
+  {
+    id: "shuttle-rayon-d",
+    rayonId: "rayon-d",
+    baseFare: 50000,
+    perKmRate: 2500,
+    minCharge: 135000,
+    serviceMultipliers: {
+      'Regular': 1.0,
+      'Semi Executive': 1.5,
+      'Executive': 2.0
+    },
+    vehicleMultipliers: {
+      'Mini Car': 1.0,
+      'SUV': 1.2,
+      'Hiace': 1.5
+    },
+    passengerMultipliers: {
+      'adult': 1.0,
+      'child': 0.75,
+      'senior': 0.85
+    }
+  }
+];
+
+/**
+ * Shuttle surge pricing rules (applies during peak times)
+ */
+export const SHUTTLE_SURGE_RULES: SurgeRule[] = [
+  {
+    id: "shuttle-surge-morning",
+    startTime: "05:00",
+    endTime: "08:30",
+    daysOfWeek: [1, 2, 3, 4, 5],
+    multiplier: 1.3,
+    label: "Morning Departure - Busiest Period"
+  },
+  {
+    id: "shuttle-surge-afternoon",
+    startTime: "17:00",
+    endTime: "20:00",
+    daysOfWeek: [1, 2, 3, 4, 5],
+    multiplier: 1.2,
+    label: "Evening Return - High Demand"
+  },
+  {
+    id: "shuttle-surge-weekend",
+    startTime: "00:00",
+    endTime: "23:59",
+    daysOfWeek: [0, 6],
+    multiplier: 1.25,
+    label: "Weekend Travel"
+  }
+];
+
+/**
+ * Shuttle promotional codes
+ */
+export const SHUTTLE_PROMOS: PromoCode[] = [
+  {
+    id: "promo-shuttle-welcome",
+    code: "SHUTTLEDEALS",
+    type: "percentage",
+    value: 15,
+    minSpend: 100000,
+    maxDiscount: 30000,
+    validFrom: "2024-01-01",
+    validUntil: "2026-12-31",
+    isActive: true
+  },
+  {
+    id: "promo-shuttle-group",
+    code: "GROUPDISCOUNT",
+    type: "percentage",
+    value: 20,
+    minSpend: 300000,
+    maxDiscount: 100000,
+    validFrom: "2024-01-01",
+    validUntil: "2026-12-31",
+    isActive: true
+  },
+  {
+    id: "promo-shuttle-roundtrip",
+    code: "ROUNDTRIP10",
+    type: "percentage",
+    value: 10,
+    minSpend: 150000,
+    maxDiscount: 25000,
+    validFrom: "2024-01-01",
+    validUntil: "2026-12-31",
+    isActive: true
+  }
+];
 
 export const shuttleRayons: Rayon[] = [
   {
@@ -186,3 +357,193 @@ export const shuttleVehicles: ShuttleVehicle[] = [
     }
   },
 ];
+
+// ============================================================================
+// SHUTTLE FARE CALCULATION SERVICE
+// ============================================================================
+
+/**
+ * Shuttle Fare Service - Calculate and manage shuttle fares
+ * Integrates with FareCalculator for consistent pricing
+ */
+export const ShuttleFareService = {
+  /**
+   * Calculate shuttle fare for a specific rayon, route, and service tier
+   * @param rayonId - Rayon identifier (rayon-a, rayon-b, rayon-c, rayon-d)
+   * @param pickupPointId - Selected pickup point ID
+   * @param serviceTier - Service tier (Regular, Semi Executive, Executive)
+   * @param vehicleType - Vehicle type (Mini Car, SUV, Hiace)
+   * @param passengers - Passenger breakdown (adults, children, seniors)
+   * @param promoCode - Optional promotional code
+   * @param isRoundTrip - Whether booking is round trip
+   * @returns Detailed fare calculation result
+   * 
+   * @example
+   * const fare = await ShuttleFareService.calculateShuttleFare({
+   *   rayonId: 'rayon-a',
+   *   pickupPointId: 'a1',
+   *   serviceTier: 'Regular',
+   *   vehicleType: 'Hiace',
+   *   passengers: [{ category: 'adult', count: 2 }],
+   *   promoCode: 'SHUTTLEDEALS'
+   * });
+   */
+  async calculateShuttleFare(params: {
+    rayonId: string;
+    pickupPointId: string;
+    serviceTier: ShuttleServiceTier;
+    vehicleType: VehicleType;
+    passengers: PassengerCount[];
+    promoCode?: string;
+    isRoundTrip?: boolean;
+  }): Promise<FareCalculationResult> {
+    // Simulate API delay
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    // Find rayon and pickup point to get actual distance
+    const rayon = shuttleRayons.find(r => r.id === params.rayonId);
+    const pickupPoint = rayon?.pickupPoints.find(p => p.id === params.pickupPointId);
+
+    if (!rayon || !pickupPoint) {
+      throw new Error('Rayon atau pickup point tidak ditemukan');
+    }
+
+    // Convert distance from meters to kilometers
+    const distanceKm = pickupPoint.distance / 1000;
+
+    // Get fare rule for this rayon
+    const fareRule = SHUTTLE_FARE_RULES.find(r => r.rayonId === params.rayonId) 
+      || SHUTTLE_FARE_RULES[0];
+
+    // Get promo if provided
+    const promo = params.promoCode 
+      ? SHUTTLE_PROMOS.find(p => p.code === params.promoCode) 
+      : undefined;
+
+    // Calculate using FareCalculator
+    const result = FareCalculator.calculateFare({
+      distance: distanceKm,
+      serviceTier: params.serviceTier,
+      vehicleType: params.vehicleType,
+      passengers: params.passengers,
+      rule: fareRule,
+      surgeRules: SHUTTLE_SURGE_RULES,
+      promoCode: promo,
+      isRoundTrip: params.isRoundTrip
+    });
+
+    return result;
+  },
+
+  /**
+   * Get fare estimate based on simple base price (for quick preview)
+   * @param rayonId - Rayon identifier
+   * @param serviceTier - Service tier
+   * @returns Quick fare estimate
+   */
+  async getQuickFareEstimate(rayonId: string, serviceTier: ShuttleServiceTier = 'Regular'): Promise<number> {
+    await new Promise(resolve => setTimeout(resolve, 100));
+
+    const rayon = shuttleRayons.find(r => r.id === rayonId);
+    if (!rayon) throw new Error('Rayon tidak ditemukan');
+
+    const basePrice = rayon.basePrice;
+    const serviceTierMultiplier = {
+      'Regular': 1.0,
+      'Semi Executive': 1.5,
+      'Executive': 2.0
+    };
+
+    return Math.round(basePrice * (serviceTierMultiplier[serviceTier] || 1));
+  },
+
+  /**
+   * Calculate fare for route from one pickup point to another
+   * @param rayonId - Rayon identifier
+   * @param fromPickupId - Starting pickup point
+   * @param toPickupId - Ending pickup point
+   * @param serviceTier - Service tier
+   * @param passengers - Passenger breakdown
+   * @returns Fare calculation result
+   */
+  async calculateRouteFare(params: {
+    rayonId: string;
+    fromPickupId: string;
+    toPickupId: string;
+    serviceTier: ShuttleServiceTier;
+    vehicleType: VehicleType;
+    passengers: PassengerCount[];
+    promoCode?: string;
+  }): Promise<FareCalculationResult> {
+    await new Promise(resolve => setTimeout(resolve, 300));
+
+    const rayon = shuttleRayons.find(r => r.id === params.rayonId);
+    if (!rayon) throw new Error('Rayon tidak ditemukan');
+
+    const fromPoint = rayon.pickupPoints.find(p => p.id === params.fromPickupId);
+    const toPoint = rayon.pickupPoints.find(p => p.id === params.toPickupId);
+
+    if (!fromPoint || !toPoint) {
+      throw new Error('Pickup point tidak ditemukan');
+    }
+
+    // Calculate distance difference
+    const distanceDifference = Math.abs(toPoint.distance - fromPoint.distance) / 1000;
+
+    const fareRule = SHUTTLE_FARE_RULES.find(r => r.rayonId === params.rayonId) 
+      || SHUTTLE_FARE_RULES[0];
+
+    const promo = params.promoCode 
+      ? SHUTTLE_PROMOS.find(p => p.code === params.promoCode) 
+      : undefined;
+
+    return FareCalculator.calculateFare({
+      distance: distanceDifference,
+      serviceTier: params.serviceTier,
+      vehicleType: params.vehicleType,
+      passengers: params.passengers,
+      rule: fareRule,
+      surgeRules: SHUTTLE_SURGE_RULES,
+      promoCode: promo
+    });
+  },
+
+  /**
+   * Validate promo code
+   * @param promoCode - Code to validate
+   * @returns Promo details if valid
+   */
+  validatePromoCode(promoCode: string): PromoCode | null {
+    const promo = SHUTTLE_PROMOS.find(p => p.code === promoCode && p.isActive);
+    
+    if (!promo) return null;
+
+    const today = new Date().toISOString().split('T')[0];
+    if (today < promo.validFrom || today > promo.validUntil) {
+      return null;
+    }
+
+    return promo;
+  },
+
+  /**
+   * Get all active promos
+   * @returns Array of active promotional codes
+   */
+  getActivePromos(): PromoCode[] {
+    const today = new Date().toISOString().split('T')[0];
+    return SHUTTLE_PROMOS.filter(p => 
+      p.isActive && 
+      today >= p.validFrom && 
+      today <= p.validUntil
+    );
+  },
+
+  /**
+   * Calculate passenger total fare
+   * Sums up individual passenger fares for a group booking
+   */
+  calculateGroupFare(fares: number[]): number {
+    return fares.reduce((sum, fare) => sum + fare, 0);
+  }
+};

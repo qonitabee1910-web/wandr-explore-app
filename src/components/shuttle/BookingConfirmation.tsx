@@ -79,10 +79,42 @@ export const BookingConfirmation: React.FC = () => {
 
           <Separator className="bg-muted-foreground/10" />
 
-          <div className="p-4 bg-muted/30 rounded-2xl space-y-2">
+          <div className="p-4 bg-muted/30 rounded-2xl space-y-3">
+            {state.fareBreakdown && (
+              <div className="space-y-1 text-xs text-muted-foreground border-b border-muted-foreground/10 pb-2 mb-2">
+                <div className="flex justify-between">
+                  <span>Base Fare ({state.fareBreakdown.baseFare} x {state.selectedSeats.length || 1})</span>
+                  <span>{state.fareBreakdown.baseFare * (state.selectedSeats.length || 1)} IDR</span>
+                </div>
+                {state.fareBreakdown.distanceFare > 0 && (
+                  <div className="flex justify-between">
+                    <span>Biaya Jarak ({state.selectedPickupPoint?.distance ? (state.selectedPickupPoint.distance / 1000).toFixed(1) : '0'} km)</span>
+                    <span>{state.fareBreakdown.distanceFare} IDR</span>
+                  </div>
+                )}
+                {state.fareBreakdown.serviceSurcharge > 0 && (
+                  <div className="flex justify-between">
+                    <span>Surcharge Layanan ({state.selectedService?.tier})</span>
+                    <span>{state.fareBreakdown.serviceSurcharge} IDR</span>
+                  </div>
+                )}
+                {state.fareBreakdown.surgeSurcharge > 0 && (
+                  <div className="flex justify-between text-orange-600 font-medium">
+                    <span>Surge Pricing ({state.fareBreakdown.surgeApplied})</span>
+                    <span>+{state.fareBreakdown.surgeSurcharge} IDR</span>
+                  </div>
+                )}
+                {state.fareBreakdown.promoDiscount > 0 && (
+                  <div className="flex justify-between text-green-600 font-medium">
+                    <span>Promo ({state.fareBreakdown.promoApplied})</span>
+                    <span>-{state.fareBreakdown.promoDiscount} IDR</span>
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex justify-between items-center">
               <p className="text-sm text-muted-foreground">Total Pembayaran</p>
-              <p className="text-2xl font-bold text-primary">{state.totalPrice} IDR</p>
+              <p className="text-2xl font-bold text-primary">{state.totalPrice.toLocaleString('id-ID')} IDR</p>
             </div>
             <p className="text-[10px] text-muted-foreground text-center">Sudah termasuk pajak dan biaya layanan</p>
           </div>

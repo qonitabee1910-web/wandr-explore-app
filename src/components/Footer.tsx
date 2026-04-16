@@ -6,13 +6,12 @@ const Footer = () => (
       <div>
         <h4 className="font-bold text-lg mb-3">traveloka</h4>
         <p className="text-background/70 leading-relaxed">
-          Platform booking hotel, shuttle, & ride terpercaya di Indonesia.
+          Platform booking shuttle & ride terpercaya di Indonesia.
         </p>
       </div>
       <div>
         <h5 className="font-semibold mb-3">Produk</h5>
         <ul className="space-y-2 text-background/70">
-          <li><Link to="/hotels" className="hover:text-background">Hotel</Link></li>
           <li><Link to="/shuttle" className="hover:text-background">Tiket Shuttle</Link></li>
           <li><Link to="/ride" className="hover:text-background">Ride Hailing</Link></li>
           <li><Link to="/promos" className="hover:text-background">Promo</Link></li>
