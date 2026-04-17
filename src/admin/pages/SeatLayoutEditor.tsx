@@ -9,8 +9,9 @@ import {
   Plus, Save, Trash2, Settings, Download, Upload, 
   Layers, CheckCircle2, AlertCircle, History, 
   Image as ImageIcon, ZoomIn, ZoomOut, MousePointer2,
-  Undo, Redo, Grid3X3, Palette
+  Undo, Redo, Grid3X3, Palette, List, Eye
 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { seatLayoutService } from '../services/seatLayoutService';
 import { SeatLayout, Seat, SeatCategory } from '../types';
 import { Button } from '@/components/ui/button';
@@ -27,16 +28,24 @@ import { toast } from 'sonner';
 import './SeatLayoutEditor.css';
 
 const SeatLayoutEditor: React.FC = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const layoutId = searchParams.get('id');
+
   const [layout, setLayout] = useState<Partial<SeatLayout>>({
     name: 'Untitled Layout',
     status: 'draft',
+    base_width: 800,
+    base_height: 600,
+    global_scale: 1.0,
     seats: []
   });
+  const [layouts, setLayouts] = useState<SeatLayout[]>([]);
   const [categories, setCategories] = useState<SeatCategory[]>([]);
   const [selectedSeatIds, setSelectedSeatIds] = useState<string[]>([]);
   const [zoom, setZoom] = useState(1);
   const [isUploading, setIsUploading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isLoadingLayouts, setIsLoadingLayouts] = useState(false);
   const [snapToGrid, setSnapToGrid] = useState(false);
   const [gridSize, setGridSize] = useState(5); // 5%
   
@@ -45,6 +54,59 @@ const SeatLayoutEditor: React.FC = () => {
   const [historyIndex, setHistoryIndex] = useState(-1);
 
   const canvasRef = useRef<HTMLDivElement>(null);
+
+  // Load categories and layouts
+  useEffect(() => {
+    fetchCategories();
+    fetchLayouts();
+  }, []);
+
+  // Load specific layout if ID is in URL
+  useEffect(() => {
+    if (layoutId) {
+      loadLayout(layoutId);
+    } else {
+      // Reset to new layout if no ID
+      setLayout({
+        name: 'Untitled Layout',
+        status: 'draft',
+        base_width: 800,
+        base_height: 600,
+        global_scale: 1.0,
+        seats: []
+      });
+    }
+  }, [layoutId]);
+
+  const fetchLayouts = async () => {
+    setIsLoadingLayouts(true);
+    const { data } = await seatLayoutService.getLayouts();
+    if (data) setLayouts(data);
+    setIsLoadingLayouts(false);
+  };
+
+  const loadLayout = async (id: string) => {
+    const toastId = toast.loading('Loading layout...');
+    const { data, error } = await seatLayoutService.getLayoutById(id);
+    if (error) {
+      toast.error('Failed to load layout', { id: toastId });
+    } else if (data) {
+      setLayout(data);
+      if (data.seats) {
+        setHistory([JSON.parse(JSON.stringify(data.seats))]);
+        setHistoryIndex(0);
+      }
+      toast.success('Layout loaded', { id: toastId });
+    }
+  };
+
+  const handleSelectLayout = (id: string) => {
+    setSearchParams({ id });
+  };
+
+  const handleCreateNew = () => {
+    setSearchParams({});
+  };
 
   // Add current state to history
   const addToHistory = (newSeats: Seat[]) => {
@@ -72,19 +134,6 @@ const SeatLayoutEditor: React.FC = () => {
       setHistoryIndex(nextIndex);
     }
   };
-
-  // Load categories and initial data
-  useEffect(() => {
-    fetchCategories();
-  }, []);
-
-  // Initialize history
-  useEffect(() => {
-    if (layout.seats && history.length === 0) {
-      setHistory([JSON.parse(JSON.stringify(layout.seats))]);
-      setHistoryIndex(0);
-    }
-  }, [layout.seats]);
 
   const fetchCategories = async () => {
     const { data } = await seatLayoutService.getCategories();
@@ -246,7 +295,10 @@ const SeatLayoutEditor: React.FC = () => {
       const layoutPayload = {
         name: layout.name,
         base_map_url: layout.base_map_url,
-        status: layout.status
+        status: layout.status,
+        base_width: layout.base_width || 800,
+        base_height: layout.base_height || 600,
+        global_scale: layout.global_scale || 1.0
       };
 
       if (layout.id) {
@@ -453,6 +505,46 @@ const SeatLayoutEditor: React.FC = () => {
 
           {categories.length > 0 && (
             <div className="pt-2 space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Saved Layouts</p>
+              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={fetchLayouts}>
+                <History className="h-3 w-3" />
+              </Button>
+            </div>
+            <div className="max-h-[150px] overflow-y-auto space-y-1 pr-1">
+              {layouts.map(l => (
+                <div 
+                  key={l.id} 
+                  className={`group flex items-center justify-between p-2 rounded-md text-[10px] cursor-pointer transition-colors ${layout.id === l.id ? 'bg-primary/10 border border-primary/20' : 'bg-muted/50 hover:bg-muted'}`}
+                  onClick={() => handleSelectLayout(l.id)}
+                >
+                  <div className="flex flex-col truncate">
+                    <span className="font-bold truncate">{l.name}</span>
+                    <span className="text-[8px] opacity-60 uppercase">{l.status}</span>
+                  </div>
+                  <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <Button variant="ghost" size="icon" className="h-5 w-5">
+                      <Eye className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+              {layouts.length === 0 && !isLoadingLayouts && (
+                <p className="text-[10px] text-center text-muted-foreground py-2 italic">No saved layouts</p>
+              )}
+              {isLoadingLayouts && (
+                <p className="text-[10px] text-center text-muted-foreground py-2 animate-pulse">Loading...</p>
+              )}
+            </div>
+            <Button variant="outline" size="sm" className="w-full h-7 text-[10px]" onClick={handleCreateNew}>
+              + Create New Layout
+            </Button>
+          </div>
+
+          <Separator />
+
+          {categories.length > 0 && (
+            <div className="pt-2 space-y-2">
                <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Categories</p>
                <div className="flex flex-wrap gap-1">
                   {categories.map(cat => (
@@ -505,8 +597,8 @@ const SeatLayoutEditor: React.FC = () => {
           ref={canvasRef}
           className="seat-map-canvas"
           style={{ 
-            width: '800px', 
-            height: '600px', 
+            width: `${layout.base_width || 800}px`, 
+            height: `${layout.base_height || 600}px`, 
             backgroundColor: layout.base_map_url ? 'transparent' : '#fff',
             transform: `scale(${zoom})`,
             // Layered background: Grid (if enabled) + Base Map
@@ -549,8 +641,8 @@ const SeatLayoutEditor: React.FC = () => {
                   backgroundColor: category?.color || '#94a3b8',
                   transform: 'translate(-50%, -50%)',
                   // Scale visually based on dimensions (relative to base 1.0m)
-                  width: `${32 * (seat.seat_width || 1.0)}px`,
-                  height: `${32 * (seat.seat_length || 1.0)}px`,
+                  width: `${32 * (seat.seat_width || 1.0) * (layout.global_scale || 1.0)}px`,
+                  height: `${32 * (seat.seat_length || 1.0) * (layout.global_scale || 1.0)}px`,
                   // Opacity change based on height
                   opacity: seat.seat_height ? 0.5 + (seat.seat_height / 1.5) * 0.5 : 1
                 }}
@@ -604,6 +696,47 @@ const SeatLayoutEditor: React.FC = () => {
                     <SelectItem value="published">Published</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              <Separator className="my-2" />
+              
+              <div className="space-y-3">
+                <h4 className="text-[10px] font-bold uppercase text-muted-foreground flex items-center gap-2">
+                  <Grid3X3 className="w-3 h-3" /> Canvas Scaling
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase text-muted-foreground">Base Width (px)</label>
+                    <Input 
+                      type="number"
+                      value={layout.base_width} 
+                      onChange={(e) => setLayout(prev => ({ ...prev, base_width: Number(e.target.value) }))}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[9px] uppercase text-muted-foreground">Base Height (px)</label>
+                    <Input 
+                      type="number"
+                      value={layout.base_height} 
+                      onChange={(e) => setLayout(prev => ({ ...prev, base_height: Number(e.target.value) }))}
+                      className="h-8 text-xs"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <label className="text-[9px] uppercase text-muted-foreground">Global Scale Multiplier</label>
+                  <div className="flex items-center gap-3">
+                    <input 
+                      type="range" 
+                      min="0.5" max="2.0" step="0.1"
+                      value={layout.global_scale || 1.0}
+                      onChange={(e) => setLayout(prev => ({ ...prev, global_scale: Number(e.target.value) }))}
+                      className="flex-1 h-1.5 bg-muted rounded-lg appearance-none cursor-pointer"
+                    />
+                    <span className="text-xs font-mono w-8">{(layout.global_scale || 1.0).toFixed(1)}x</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>

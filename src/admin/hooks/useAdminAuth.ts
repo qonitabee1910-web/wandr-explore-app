@@ -4,7 +4,7 @@
  * Verifies user role and provides admin context
  */
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useMemo } from 'react';
 import { supabase } from '@/lib/supabase';
 import { AdminUser } from '../types/index';
 
@@ -24,18 +24,6 @@ interface UseAdminAuthReturn {
 /**
  * Hook to check admin authentication and permissions
  * Must be called within a React component
- *
- * Usage:
- * ```typescript
- * const { isAdmin, isLoading, user, canAccess } = useAdminAuth();
- *
- * if (isLoading) return <LoadingSpinner />;
- * if (!isAdmin) return <AccessDenied />;
- *
- * if (canAccess('drivers:approve')) {
- *   // Show approval button
- * }
- * ```
  */
 export function useAdminAuth(): UseAdminAuthReturn {
   const [isAdmin, setIsAdmin] = useState(false);
@@ -44,9 +32,9 @@ export function useAdminAuth(): UseAdminAuthReturn {
   const [error, setError] = useState<string | null>(null);
 
   // Fetch admin user details
-  const fetchAdminUser = useCallback(async () => {
+  const fetchAdminUser = useCallback(async (showLoading = true) => {
     try {
-      setIsLoading(true);
+      if (showLoading) setIsLoading(true);
       setError(null);
 
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
@@ -61,15 +49,13 @@ export function useAdminAuth(): UseAdminAuthReturn {
         return;
       }
 
-      // Check if user is admin from users table (secure approach)
-      // Role stored in users table, NOT user_metadata (which is user-editable)
+      // Check if user is admin from users table
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
         .select('role, full_name')
         .eq('id', authUser.id)
         .single();
 
-      // Handle case where profile doesn't exist yet
       if (profileError && profileError.code === 'PGRST116') {
         setIsAdmin(false);
         setUser(null);
@@ -95,7 +81,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
         return;
       }
 
-      // User is admin - set admin state
+      // User is admin
       setIsAdmin(true);
       setUser({
         id: authUser.id,
@@ -120,9 +106,9 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
   // Listen to auth changes
   useEffect(() => {
-    fetchAdminUser();
+    // Initial fetch
+    fetchAdminUser(true);
 
-    // Subscribe to auth state changes
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -133,10 +119,11 @@ export function useAdminAuth(): UseAdminAuthReturn {
         setUser(null);
         setIsLoading(false);
       } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
-        await fetchAdminUser();
+        // Don't show global loading for silent refreshes or updates
+        await fetchAdminUser(false);
       } else if (event === 'INITIAL_SESSION') {
         if (session) {
-          await fetchAdminUser();
+          await fetchAdminUser(false);
         } else {
           setIsLoading(false);
         }
@@ -151,16 +138,9 @@ export function useAdminAuth(): UseAdminAuthReturn {
   // Check if user has specific permission
   const checkPermission = useCallback((permission: string): boolean => {
     if (!isAdmin || !user) return false;
-
-    // Full admin has all permissions
-    if (user.role === 'admin') {
-      return true;
-    }
-
+    if (user.role === 'admin' || user.role === 'super_admin') return true;
     return user.permissions.includes(permission);
   }, [isAdmin, user]);
-
-  const canAccess = checkPermission;
 
   // Logout
   const logout = useCallback(async () => {
@@ -176,19 +156,20 @@ export function useAdminAuth(): UseAdminAuthReturn {
 
   // Refresh auth status
   const refreshAuth = useCallback(async () => {
-    await fetchAdminUser();
+    await fetchAdminUser(true);
   }, [fetchAdminUser]);
 
-  return {
+  // Memoize the return value to prevent unnecessary re-renders of context consumers
+  return useMemo(() => ({
     isAdmin,
     isLoading,
     user,
     error,
-    canAccess,
+    canAccess: checkPermission,
     checkPermission,
     logout,
     refreshAuth,
-  };
+  }), [isAdmin, isLoading, user, error, checkPermission, logout, refreshAuth]);
 }
 
 /**

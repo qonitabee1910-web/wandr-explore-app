@@ -547,7 +547,7 @@ export const DashboardPage: React.FC = () => {
         </div>
       </div>
       </div>
-    </ProtectedAdminPage>
+    </div>
   );
 };
 

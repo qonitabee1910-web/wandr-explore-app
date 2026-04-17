@@ -48,21 +48,15 @@ export const seatLayoutService = {
 
   // --- Seats ---
   async saveSeats(layoutId: string, seats: Partial<Seat>[]) {
-    // 1. Delete existing seats for this layout
-    const { error: deleteError } = await supabase
-      .from('seats')
-      .delete()
-      .eq('layout_id', layoutId);
-    
-    if (deleteError) {
-      console.error('[SeatLayoutService] Error deleting seats:', deleteError);
-      return { error: deleteError };
+    if (seats.length === 0) {
+      // If no seats, delete all
+      return await supabase
+        .from('seats')
+        .delete()
+        .eq('layout_id', layoutId);
     }
 
-    if (seats.length === 0) return { data: [] };
-
-    // 2. Insert new seats
-    // Ensure all seats have the correct layout_id and remove potential non-db fields
+    // 1. Prepare seats for upsert
     const cleanedSeats = seats.map(s => {
       const { 
         category, 
@@ -80,19 +74,34 @@ export const seatLayoutService = {
       };
     });
 
-    console.log('[SeatLayoutService] Inserting cleaned seats:', cleanedSeats);
+    console.log('[SeatLayoutService] Upserting seats:', cleanedSeats.length);
 
-    const { data, error: insertError } = await supabase
+    // 2. Perform upsert (Insert new, update existing based on ID)
+    const { data: upsertData, error: upsertError } = await supabase
       .from('seats')
-      .insert(cleanedSeats)
+      .upsert(cleanedSeats, { onConflict: 'id' })
       .select();
     
-    if (insertError) {
-      console.error('[SeatLayoutService] Error inserting seats:', insertError);
-      return { error: insertError };
+    if (upsertError) {
+      console.error('[SeatLayoutService] Upsert Error:', upsertError);
+      return { error: upsertError };
     }
 
-    return { data };
+    // 3. Delete seats that are no longer in the layout
+    const currentSeatIds = cleanedSeats.filter(s => s.id).map(s => s.id);
+    if (currentSeatIds.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('seats')
+        .delete()
+        .eq('layout_id', layoutId)
+        .not('id', 'in', `(${currentSeatIds.join(',')})`);
+      
+      if (deleteError) {
+        console.warn('[SeatLayoutService] Error deleting removed seats:', deleteError);
+      }
+    }
+
+    return { data: upsertData };
   },
 
   // --- Categories ---

@@ -3,7 +3,7 @@
  * Renders the visual seat map for the customer booking flow
  */
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useShuttle } from '../../context/ShuttleContext';
 import { seatLayoutService } from '../../admin/services/seatLayoutService';
 import { SeatLayout, Seat } from '../../admin/types';
@@ -17,6 +17,25 @@ export const SeatSelection: React.FC = () => {
   const { state, toggleSeat, nextStep, prevStep } = useShuttle();
   const [layout, setLayout] = useState<SeatLayout | null>(null);
   const [loading, setLoading] = useState(true);
+  const [containerWidth, setContainerWidth] = useState(0);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Monitor container size for scaling
+  useEffect(() => {
+    if (!containerRef.current) return;
+    
+    const updateWidth = () => {
+      if (containerRef.current) {
+        setContainerWidth(containerRef.current.offsetWidth);
+      }
+    };
+
+    const observer = new ResizeObserver(updateWidth);
+    observer.observe(containerRef.current);
+    updateWidth();
+
+    return () => observer.disconnect();
+  }, [layout]);
 
   useEffect(() => {
     const fetchLayout = async () => {
@@ -74,11 +93,12 @@ export const SeatSelection: React.FC = () => {
         <div className="md:col-span-2">
           {/* Visual Map */}
           <div 
+            ref={containerRef}
             className="relative bg-muted/20 rounded-[2rem] shadow-xl border overflow-hidden mx-auto flex items-center justify-center"
             style={{ 
               width: '100%', 
               maxWidth: '600px',
-              aspectRatio: '4/3',
+              aspectRatio: `${layout.base_width || 4}/${layout.base_height || 3}`,
               backgroundImage: layout.base_map_url ? `url(${layout.base_map_url})` : 'none',
               backgroundSize: 'contain',
               backgroundPosition: 'center',
@@ -97,6 +117,10 @@ export const SeatSelection: React.FC = () => {
               const isOccupied = state.occupiedSeats.includes(seat.id) || seat.status !== 'available';
               const isSelected = state.selectedSeats.includes(seat.id);
               
+              // Calculate scaling ratio based on designer's base width
+              const ratio = containerWidth / (layout.base_width || 800);
+              const baseSeatSize = 32 * (layout.global_scale || 1.0) * ratio;
+
               return (
                 <button
                   key={seat.id}
@@ -115,8 +139,9 @@ export const SeatSelection: React.FC = () => {
                     top: `${seat.y_pos}%`,
                     transform: 'translate(-50%, -50%)',
                     // Apply dimensions for booking display (relative to 1.0m base)
-                    width: `${32 * (seat.seat_width || 1.0)}px`,
-                    height: `${32 * (seat.seat_length || 1.0)}px`
+                    width: `${baseSeatSize * (seat.seat_width || 1.0)}px`,
+                    height: `${baseSeatSize * (seat.seat_length || 1.0)}px`,
+                    fontSize: `${Math.max(8, 10 * ratio)}px`
                   }}
                 >
                   {seat.seat_number}

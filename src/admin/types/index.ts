@@ -242,6 +242,9 @@ export interface SeatLayout {
   name: string;
   base_map_url: string;
   status: 'draft' | 'published';
+  base_width?: number;
+  base_height?: number;
+  global_scale?: number;
   created_at: string;
   updated_at: string;
   seats?: Seat[];

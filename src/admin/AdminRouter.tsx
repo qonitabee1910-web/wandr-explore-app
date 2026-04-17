@@ -6,7 +6,7 @@
 import React, { lazy, Suspense } from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import AdminLayout from './components/AdminLayout';
-import { AdminProvider } from './context/AdminContext';
+import { AdminProvider, ProtectedAdminPage } from './context/AdminContext';
 
 // Lazy load pages for code splitting
 const Dashboard = lazy(() => import('./pages/Dashboard'));
@@ -51,111 +51,112 @@ const PageLoader = () => (
 /**
  * Admin Router Component
  * All admin routes under /admin prefix
- * Wrapped with AdminProvider for authentication context
  */
 export const AdminRouter: React.FC = () => {
   return (
     <AdminProvider>
-      <Routes>
-        {/* Main layout with sidebar and topbar */}
-        <Route element={<AdminLayout />}>
-        {/* Dashboard */}
-        <Route
-          path="dashboard"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Dashboard />
-            </Suspense>
-          }
-        />
+      <ProtectedAdminPage>
+        <Routes>
+          {/* Main layout with sidebar and topbar */}
+          <Route element={<AdminLayout />}>
+            {/* Dashboard */}
+            <Route
+              path="dashboard"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Dashboard />
+                </Suspense>
+              }
+            />
 
-        {/* Driver Management */}
-        <Route
-          path="drivers"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Drivers />
-            </Suspense>
-          }
-        />
+            {/* Driver Management */}
+            <Route
+              path="drivers"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Drivers />
+                </Suspense>
+              }
+            />
 
-        {/* Ride Monitoring */}
-        <Route
-          path="rides"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Rides />
-            </Suspense>
-          }
-        />
+            {/* Ride Monitoring */}
+            <Route
+              path="rides"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Rides />
+                </Suspense>
+              }
+            />
 
-        {/* Shuttle Management */}
-        <Route
-          path="shuttles"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Shuttles />
-            </Suspense>
-          }
-        />
+            {/* Shuttle Management */}
+            <Route
+              path="shuttles"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Shuttles />
+                </Suspense>
+              }
+            />
 
-        {/* Pricing Control */}
-        <Route
-          path="pricing"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Pricing />
-            </Suspense>
-          }
-        />
+            {/* Pricing Control */}
+            <Route
+              path="pricing"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Pricing />
+                </Suspense>
+              }
+            />
 
-        {/* Promo Control */}
-        <Route
-          path="promos"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Promos />
-            </Suspense>
-          }
-        />
+            {/* Promo Control */}
+            <Route
+              path="promos"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Promos />
+                </Suspense>
+              }
+            />
 
-        {/* Ads Control */}
-        <Route
-          path="ads"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Ads />
-            </Suspense>
-          }
-        />
+            {/* Ads Control */}
+            <Route
+              path="ads"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Ads />
+                </Suspense>
+              }
+            />
 
-        {/* Settings */}
-        <Route
-          path="settings"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <Settings />
-            </Suspense>
-          }
-        />
+            {/* Settings */}
+            <Route
+              path="settings"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <Settings />
+                </Suspense>
+              }
+            />
 
-        {/* Seat Layout Editor */}
-        <Route
-          path="layout-editor"
-          element={
-            <Suspense fallback={<PageLoader />}>
-              <SeatLayoutEditor />
-            </Suspense>
-          }
-        />
+            {/* Seat Layout Editor */}
+            <Route
+              path="layout-editor"
+              element={
+                <Suspense fallback={<PageLoader />}>
+                  <SeatLayoutEditor />
+                </Suspense>
+              }
+            />
 
-        {/* Default route */}
-        <Route index element={<Navigate to="dashboard" replace />} />
-      </Route>
+            {/* Default route */}
+            <Route index element={<Navigate to="dashboard" replace />} />
+          </Route>
 
-      {/* Catch-all for invalid admin routes */}
-      <Route path="*" element={<Navigate to="dashboard" replace />} />
-    </Routes>
+          {/* Catch-all for invalid admin routes */}
+          <Route path="*" element={<Navigate to="dashboard" replace />} />
+        </Routes>
+      </ProtectedAdminPage>
     </AdminProvider>
   );
 };
