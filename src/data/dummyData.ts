@@ -1,6 +1,4 @@
 export * from "./rides";
-export * from "./promos";
-export * from "./bookingHistory";
 
 export const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("id-ID", {
