@@ -18,15 +18,21 @@ CREATE TABLE IF NOT EXISTS public.shuttles (
 ALTER TABLE public.shuttles ENABLE ROW LEVEL SECURITY;
 
 -- Create indexes
-CREATE INDEX idx_shuttles_status ON public.shuttles(status);
-CREATE INDEX idx_shuttles_route ON public.shuttles(current_route_id);
+CREATE INDEX IF NOT EXISTS idx_shuttles_status ON public.shuttles(status);
+CREATE INDEX IF NOT EXISTS idx_shuttles_route ON public.shuttles(current_route_id);
 
 -- RLS Policies
-CREATE POLICY "Public can view active shuttles"
-ON public.shuttles FOR SELECT
-USING (status = 'active' OR auth.role() = 'authenticated');
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public can view active shuttles') THEN
+        CREATE POLICY "Public can view active shuttles"
+        ON public.shuttles FOR SELECT
+        USING (status = 'active' OR auth.role() = 'authenticated');
+    END IF;
+END $$;
 
 -- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_shuttles_updated_at ON public.shuttles;
 CREATE TRIGGER update_shuttles_updated_at
 BEFORE UPDATE ON public.shuttles
 FOR EACH ROW

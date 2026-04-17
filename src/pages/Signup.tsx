@@ -87,7 +87,7 @@ const SignupPage: React.FC = () => {
         id: data.user.id,
         email: formData.email,
         full_name: formData.fullName,
-        phone: formData.phone,
+        phone_number: formData.phone,
         role: 'user',
         status: 'active',
       });

@@ -96,7 +96,7 @@ export const UserAuthProvider: React.FC<UserAuthProviderProps> = ({ children }) 
         email: authUser.email || '',
         fullName: userProfile?.full_name || authUser.user_metadata?.full_name,
         phone: userProfile?.phone_number || authUser.user_metadata?.phone,
-        avatar: userProfile?.profile_picture_url,
+        avatar: userProfile?.profile_photo_url,
         role: userProfile?.role || 'user',
       };
 

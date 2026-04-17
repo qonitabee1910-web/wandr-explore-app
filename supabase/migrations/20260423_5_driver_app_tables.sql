@@ -31,9 +31,9 @@ CREATE TABLE IF NOT EXISTS public.drivers (
 
 ALTER TABLE public.drivers ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_drivers_is_online ON public.drivers(is_online);
-CREATE INDEX idx_drivers_status ON public.drivers(status);
-CREATE INDEX idx_drivers_location ON public.drivers(current_latitude, current_longitude);
+CREATE INDEX IF NOT EXISTS idx_drivers_is_online ON public.drivers(is_online);
+CREATE INDEX IF NOT EXISTS idx_drivers_status ON public.drivers(status);
+CREATE INDEX IF NOT EXISTS idx_drivers_location ON public.drivers(current_latitude, current_longitude);
 
 -- ============================================================================
 -- DRIVER LOCATION HISTORY
@@ -51,33 +51,41 @@ CREATE TABLE IF NOT EXISTS public.driver_locations (
 
 ALTER TABLE public.driver_locations ENABLE ROW LEVEL SECURITY;
 
-CREATE INDEX idx_driver_locations_driver_id ON public.driver_locations(driver_id);
-CREATE INDEX idx_driver_locations_recorded_at ON public.driver_locations(recorded_at);
+CREATE INDEX IF NOT EXISTS idx_driver_locations_driver_id ON public.driver_locations(driver_id);
+CREATE INDEX IF NOT EXISTS idx_driver_locations_recorded_at ON public.driver_locations(recorded_at);
 
 -- ============================================================================
 -- RLS POLICIES
 -- ============================================================================
 
 -- Drivers can read/update their own state
-CREATE POLICY "Drivers can manage their own state"
-ON public.drivers FOR ALL
-USING (auth.uid() = id)
-WITH CHECK (auth.uid() = id);
+DO $$ 
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Drivers can manage their own state') THEN
+        CREATE POLICY "Drivers can manage their own state"
+        ON public.drivers FOR ALL
+        USING (auth.uid() = id)
+        WITH CHECK (auth.uid() = id);
+    END IF;
 
--- Everyone (or authenticated users) can see online drivers (for passenger app)
-CREATE POLICY "Public can see online drivers"
-ON public.drivers FOR SELECT
-USING (is_online = true);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Public can see online drivers') THEN
+        CREATE POLICY "Public can see online drivers"
+        ON public.drivers FOR SELECT
+        USING (is_online = true);
+    END IF;
 
--- Drivers can insert their own location history
-CREATE POLICY "Drivers can insert location history"
-ON public.driver_locations FOR INSERT
-WITH CHECK (auth.uid() = driver_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Drivers can insert location history') THEN
+        CREATE POLICY "Drivers can insert location history"
+        ON public.driver_locations FOR INSERT
+        WITH CHECK (auth.uid() = driver_id);
+    END IF;
 
--- Drivers can see their own location history
-CREATE POLICY "Drivers can see their own location history"
-ON public.driver_locations FOR SELECT
-USING (auth.uid() = driver_id);
+    IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Drivers can see their own location history') THEN
+        CREATE POLICY "Drivers can see their own location history"
+        ON public.driver_locations FOR SELECT
+        USING (auth.uid() = driver_id);
+    END IF;
+END $$;
 
 -- ============================================================================
 -- TRIGGERS
@@ -91,7 +99,8 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
+-- Trigger for updated_at
+DROP TRIGGER IF EXISTS update_drivers_updated_at ON public.drivers;
 CREATE TRIGGER update_drivers_updated_at
 BEFORE UPDATE ON public.drivers
 FOR EACH ROW
@@ -109,6 +118,7 @@ BEGIN
 END;
 $$ language 'plpgsql';
 
+DROP TRIGGER IF EXISTS trigger_record_driver_location ON public.drivers;
 CREATE TRIGGER trigger_record_driver_location
 AFTER UPDATE ON public.drivers
 FOR EACH ROW

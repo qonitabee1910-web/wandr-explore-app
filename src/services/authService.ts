@@ -200,7 +200,7 @@ class AuthService {
         email: user.email || '',
         fullName: profile?.full_name,
         phone: profile?.phone_number,
-        avatar: profile?.profile_picture_url,
+        avatar: profile?.profile_photo_url,
         role: profile?.role || 'user',
       };
     } catch (error) {
@@ -268,7 +268,7 @@ class AuthService {
         .update({
           full_name: data.fullName,
           phone_number: data.phone,
-          profile_picture_url: data.avatar,
+          profile_photo_url: data.avatar,
         })
         .eq('id', user.id);
 
@@ -291,32 +291,39 @@ class AuthService {
    */
   async registerAsDriver(licenseNumber: string, licenseExpiry: string) {
     try {
-      const user = await getCurrentUser();
-      if (!user) throw new Error('Not authenticated');
+      const { data: { user }, error: userError } = await supabase.auth.getUser();
+      if (userError || !user) throw new Error('Not authenticated');
 
-      // Create driver profile
-      const { error } = await supabase.from('drivers').insert({
-        id: user.id,
-        license_number: licenseNumber,
-        license_expiry_date: licenseExpiry,
-      });
+      // Update user profile with driver info
+      const { error } = await supabase
+        .from('users')
+        .update({
+          role: 'driver',
+          driver_license_number: licenseNumber,
+          driver_license_expiry: licenseExpiry,
+        })
+        .eq('id', user.id);
 
       if (error) throw error;
 
-      // Update user role
-      await supabase
-        .from('users')
-        .update({ role: 'driver' })
-        .eq('id', user.id);
+      // Create entry in drivers table for real-time state
+      const { error: driverError } = await supabase
+        .from('drivers')
+        .upsert({
+          id: user.id,
+          is_online: false,
+          status: 'offline',
+        });
 
-      return {
-        success: true,
-        message: 'Registered as driver successfully. Pending approval.',
-      };
+      if (driverError) {
+        console.warn('Driver state creation failed (non-blocking):', driverError);
+      }
+
+      return { success: true };
     } catch (error) {
       return {
         success: false,
-        error: error instanceof Error ? error.message : 'Registration failed',
+        error: error instanceof Error ? error.message : 'Driver registration failed',
       };
     }
   }
