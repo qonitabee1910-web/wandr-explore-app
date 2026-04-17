@@ -307,7 +307,7 @@ describe('AdvancedRouteService', () => {
           { lat: -6.2, lng: 106.8 },
           invalidLoc
         );
-        fail('Should throw for invalid latitude');
+        expect.fail('Should throw for invalid latitude');
       } catch (error: any) {
         expect(error.message).toContain('Koordinat tidak valid');
       }
@@ -321,7 +321,7 @@ describe('AdvancedRouteService', () => {
           { lat: -6.2, lng: 106.8 },
           invalidLoc
         );
-        fail('Should throw for invalid longitude');
+        expect.fail('Should throw for invalid longitude');
       } catch (error: any) {
         expect(error.message).toContain('Koordinat tidak valid');
       }
@@ -333,7 +333,7 @@ describe('AdvancedRouteService', () => {
       
       try {
         await AdvancedRouteService.getDetailedRoute(start, end);
-        fail('Should throw for too close coordinates');
+        expect.fail('Should throw for too close coordinates');
       } catch (error: any) {
         expect(error.message).toContain('Titik jemput dan tujuan terlalu dekat');
       }
@@ -388,7 +388,7 @@ describe('AdvancedRouteService', () => {
         const results = await AdvancedRouteService.searchLocation('   '); // Only spaces
         expect(Array.isArray(results)).toBe(true);
       } catch (error) {
-        fail('Should not throw on valid parameters');
+        expect.fail('Should not throw on valid parameters');
       }
     });
   });
@@ -405,7 +405,7 @@ describe('AdvancedRouteService', () => {
         }
       };
       
-      const formatted = AdvancedRouteService['_formatAddress'](result);
+      const formatted = AdvancedRouteService['_formatAddress'](result as any);
       expect(formatted).toContain('Jl. Sudirman');
       expect(formatted).toContain('Jakarta');
     });
@@ -418,7 +418,7 @@ describe('AdvancedRouteService', () => {
         }
       };
       
-      const formatted = AdvancedRouteService['_formatAddress'](result);
+      const formatted = AdvancedRouteService['_formatAddress'](result as any);
       expect(formatted).toBeTruthy();
     });
   });
@@ -527,7 +527,7 @@ describe('AdvancedRouteService', () => {
           { lat: -6.2, lng: 106.8 },
           { lat: -6.3, lng: 106.9 }
         );
-        fail('Should throw for timeout');
+        expect.fail('Should throw for timeout');
       } catch (error: any) {
         expect(error.message).toContain('Layanan tidak merespons');
       }
@@ -550,7 +550,7 @@ describe('AdvancedRouteService', () => {
           { lat: -6.2, lng: 106.8 },
           { lat: -6.3, lng: 106.9 }
         );
-        fail('Should throw for no route');
+        expect.fail('Should throw for no route');
       } catch (error: any) {
         expect(error.message).toContain('Rute tidak ditemukan');
       }

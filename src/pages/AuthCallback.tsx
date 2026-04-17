@@ -30,7 +30,7 @@ const AuthCallback: React.FC = () => {
         // Exchange the token for a session
         const { data, error: err } = await supabase.auth.verifyOtp({
           token_hash: token,
-          type: type as 'email' | 'sms' | 'recovery' | 'invite' | 'magiclink' | 'phone_change' | 'email_change',
+          type: type as 'email' | 'recovery' | 'invite' | 'magiclink' | 'email_change',
         });
 
         if (err) {
