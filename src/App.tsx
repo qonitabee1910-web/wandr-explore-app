@@ -7,7 +7,6 @@ import { UserAuthProvider } from "@/context/UserAuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index";
 import Shuttle from "./pages/Shuttle";
-import ShuttleBooking from "./pages/ShuttleBooking";
 import Ride from "./pages/Ride";
 import Promos from "./pages/Promos";
 import Account from "./pages/Account";
@@ -15,6 +14,7 @@ import Booking from "./pages/Booking";
 import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
+import AuthCallback from "./pages/AuthCallback";
 
 const queryClient = new QueryClient();
 
@@ -35,12 +35,10 @@ const App = () => (
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
             <Route path="/signup" element={<Signup />} />
-            <Route path="/hotels" element={<NotFound />} />
-            <Route path="/hotels/:id" element={<NotFound />} />
+            <Route path="/auth/callback" element={<AuthCallback />} />
 
             {/* Protected user routes */}
             <Route path="/shuttle" element={<ProtectedRoute><Shuttle /></ProtectedRoute>} />
-            <Route path="/shuttle/booking" element={<ProtectedRoute><ShuttleBooking /></ProtectedRoute>} />
             <Route path="/ride" element={<ProtectedRoute><Ride /></ProtectedRoute>} />
             <Route path="/promos" element={<ProtectedRoute><Promos /></ProtectedRoute>} />
             <Route path="/account" element={<ProtectedRoute><Account /></ProtectedRoute>} />

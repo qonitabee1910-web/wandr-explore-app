@@ -1,17 +1,11 @@
-/**
- * Signup Page
- * User registration
- */
-
 import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/lib/supabase';
 import { Mail, Lock, User, Phone, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import './Auth.css';
 
 const SignupPage: React.FC = () => {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
@@ -25,45 +19,23 @@ const SignupPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [success, setSuccess] = useState(false);
 
-  const loginType = searchParams.get('type') || 'user';
-
   const validateForm = (): boolean => {
-    if (!formData.fullName.trim()) {
-      setError('Full name is required');
-      return false;
-    }
-    if (!formData.email.trim()) {
-      setError('Email is required');
-      return false;
-    }
-    if (formData.password.length < 6) {
-      setError('Password must be at least 6 characters');
-      return false;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
-      return false;
-    }
+    if (!formData.fullName.trim()) { setError('Full name is required'); return false; }
+    if (!formData.email.trim()) { setError('Email is required'); return false; }
+    if (formData.password.length < 6) { setError('Password must be at least 6 characters'); return false; }
+    if (formData.password !== formData.confirmPassword) { setError('Passwords do not match'); return false; }
     return true;
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
-
-    if (!validateForm()) {
-      return;
-    }
-
+    if (!validateForm()) return;
     setLoading(true);
 
     try {
-      // Sign up with Supabase
-      // Use localhost for redirect URL - Supabase requires whitelisted domains
-      const redirectUrl = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
-        ? `http://localhost:${window.location.port || 8080}/auth/callback`
-        : `${window.location.origin}/auth/callback`;
-      
+      const redirectUrl = `${window.location.origin}/auth/callback`;
+
       const { data, error: signupError } = await supabase.auth.signUp({
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
@@ -77,40 +49,15 @@ const SignupPage: React.FC = () => {
       });
 
       if (signupError) throw signupError;
-
-      if (!data.user) {
-        throw new Error('Signup failed');
-      }
-
-      // Create user profile
-      const { error: profileError } = await supabase.from('users').insert({
-        id: data.user.id,
-        email: formData.email,
-        full_name: formData.fullName,
-        phone_number: formData.phone,
-        role: 'user',
-        status: 'active',
-      });
-
-      if (profileError && profileError.code !== '23505') {
-        // 23505 = unique violation (profile might already exist)
-        throw profileError;
-      }
+      if (!data.user) throw new Error('Signup failed');
 
       setSuccess(true);
-      setTimeout(() => {
-        navigate('/login?type=' + loginType);
-      }, 2000);
+      setTimeout(() => navigate('/login'), 2500);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Signup failed';
-      setError(message);
+      setError(err instanceof Error ? err.message : 'Signup failed');
     } finally {
       setLoading(false);
     }
-  };
-
-  const goToLogin = () => {
-    navigate(`/login?type=${loginType}`);
   };
 
   if (success) {
@@ -120,9 +67,7 @@ const SignupPage: React.FC = () => {
           <div className="auth-success">
             <CheckCircle size={48} />
             <h1>Account Created!</h1>
-            <p>
-              Please check your email to verify your account. You'll be redirected to login shortly.
-            </p>
+            <p>Please check your email to verify your account.</p>
           </div>
         </div>
       </div>
@@ -149,15 +94,10 @@ const SignupPage: React.FC = () => {
             <label htmlFor="fullName">Full Name</label>
             <div className="input-wrapper">
               <User size={18} />
-              <input
-                id="fullName"
-                type="text"
-                placeholder="Enter your full name"
+              <input id="fullName" type="text" placeholder="Enter your full name"
                 value={formData.fullName}
                 onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                disabled={loading}
-                required
-              />
+                disabled={loading} required />
             </div>
           </div>
 
@@ -165,15 +105,10 @@ const SignupPage: React.FC = () => {
             <label htmlFor="email">Email</label>
             <div className="input-wrapper">
               <Mail size={18} />
-              <input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
+              <input id="email" type="email" placeholder="Enter your email"
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                disabled={loading}
-                required
-              />
+                disabled={loading} required />
             </div>
           </div>
 
@@ -181,14 +116,10 @@ const SignupPage: React.FC = () => {
             <label htmlFor="phone">Phone (Optional)</label>
             <div className="input-wrapper">
               <Phone size={18} />
-              <input
-                id="phone"
-                type="tel"
-                placeholder="Enter your phone number"
+              <input id="phone" type="tel" placeholder="Enter your phone number"
                 value={formData.phone}
                 onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                disabled={loading}
-              />
+                disabled={loading} />
             </div>
           </div>
 
@@ -196,20 +127,12 @@ const SignupPage: React.FC = () => {
             <label htmlFor="password">Password</label>
             <div className="input-wrapper">
               <Lock size={18} />
-              <input
-                id="password"
-                type={showPassword ? 'text' : 'password'}
+              <input id="password" type={showPassword ? 'text' : 'password'}
                 placeholder="Enter password (min 6 characters)"
                 value={formData.password}
                 onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                disabled={loading}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="toggle-password"
-              >
+                disabled={loading} required />
+              <button type="button" onClick={() => setShowPassword(!showPassword)} className="toggle-password">
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
@@ -219,30 +142,18 @@ const SignupPage: React.FC = () => {
             <label htmlFor="confirmPassword">Confirm Password</label>
             <div className="input-wrapper">
               <Lock size={18} />
-              <input
-                id="confirmPassword"
-                type={showConfirmPassword ? 'text' : 'password'}
+              <input id="confirmPassword" type={showConfirmPassword ? 'text' : 'password'}
                 placeholder="Confirm password"
                 value={formData.confirmPassword}
                 onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                disabled={loading}
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="toggle-password"
-              >
+                disabled={loading} required />
+              <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="toggle-password">
                 {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
           </div>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="btn-primary"
-          >
+          <button type="submit" disabled={loading} className="btn-primary">
             {loading ? 'Creating account...' : 'Sign up'}
           </button>
         </form>
@@ -250,9 +161,7 @@ const SignupPage: React.FC = () => {
         <div className="auth-footer">
           <p>
             Already have an account?{' '}
-            <button onClick={goToLogin} className="link-button">
-              Login
-            </button>
+            <Link to="/login" className="link-button">Login</Link>
           </p>
         </div>
       </div>

@@ -1,5 +1,3 @@
-export * from "./hotels";
-export * from "./shuttles";
 export * from "./rides";
 export * from "./promos";
 export * from "./bookingHistory";
