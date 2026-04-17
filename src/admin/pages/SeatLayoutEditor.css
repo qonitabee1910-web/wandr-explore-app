@@ -58,6 +58,12 @@
   z-index: 100;
 }
 
+.seat-item.dragging {
+  box-shadow: 0 8px 16px rgba(0,0,0,0.2), 0 0 0 2px rgba(255,255,255,0.5);
+  transform: scale(1.1);
+  opacity: 1 !important;
+}
+
 .seat-editor-sidebar {
   width: 300px;
   background: white;

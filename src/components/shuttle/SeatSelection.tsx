@@ -1,6 +1,6 @@
 /**
  * Dynamic Seat Selection Component
- * Renders the visual seat map for the customer booking flow
+ * Renders the visual seat map with vehicle image for the customer booking flow
  */
 
 import React, { useState, useEffect, useRef } from 'react';
@@ -10,12 +10,15 @@ import { SeatLayout, Seat } from '../../admin/types';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { ArrowLeft, CheckCircle2, Info, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Info, Image as ImageIcon, Loader } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getVehicleImage } from '../../data/vehicleImages';
+import { SEAT_LAYOUT_CONSTANTS, calculateSeatDimensions } from './seatCoordinateSystem';
 
 export const SeatSelection: React.FC = () => {
   const { state, toggleSeat, nextStep, prevStep } = useShuttle();
   const [layout, setLayout] = useState<SeatLayout | null>(null);
+  const [vehicleImageUrl, setVehicleImageUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [containerWidth, setContainerWidth] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -53,6 +56,13 @@ export const SeatSelection: React.FC = () => {
           
           console.log("Layout loaded:", detail.name, "Base Map URL:", detail.base_map_url ? "Present" : "Missing");
           setLayout(detail);
+          
+          // Get vehicle image from selected vehicle type or use default
+          if (state.selectedVehicle?.type) {
+            const vehicleImage = getVehicleImage(state.selectedVehicle.type);
+            setVehicleImageUrl(vehicleImage);
+            console.log("Vehicle image set for:", state.selectedVehicle.type);
+          }
         } else {
           console.warn("No published seat layout found.");
           // Fallback: If no published layout, check if there are any layouts at all for debugging
@@ -68,7 +78,7 @@ export const SeatSelection: React.FC = () => {
     };
 
     fetchLayout();
-  }, []);
+  }, [state.selectedVehicle]);
 
   if (loading) return <div className="text-center py-20">Memuat denah kursi...</div>;
 
@@ -89,9 +99,50 @@ export const SeatSelection: React.FC = () => {
         <h2 className="text-xl font-bold">Pilih Kursi</h2>
       </div>
 
+      {/* Vehicle Image Display Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="bg-gradient-to-br from-primary/5 to-primary/10 rounded-3xl overflow-hidden shadow-md border border-primary/10"
+      >
+        <div className="relative h-64 md:h-80 w-full bg-muted flex items-center justify-center overflow-hidden">
+          {vehicleImageUrl ? (
+            <>
+              <img 
+                src={vehicleImageUrl} 
+                alt={state.selectedVehicle?.type || 'Vehicle'}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  // Fallback if image fails to load
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent" />
+            </>
+          ) : (
+            <div className="text-center space-y-2">
+              <ImageIcon className="w-16 h-16 mx-auto text-muted-foreground opacity-30" />
+              <p className="text-sm text-muted-foreground">Gambar kendaraan tidak tersedia</p>
+            </div>
+          )}
+        </div>
+        <div className="p-4 bg-white/50 backdrop-blur-sm border-t border-primary/10">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Kendaraan</p>
+              <h3 className="text-2xl font-bold text-foreground">{state.selectedVehicle?.type}</h3>
+            </div>
+            <Badge variant="secondary" className="text-lg px-3 py-1">
+              Kapasitas {state.selectedVehicle?.capacity}
+            </Badge>
+          </div>
+        </div>
+      </motion.div>
+
       <div className="grid md:grid-cols-3 gap-8">
         <div className="md:col-span-2">
-          {/* Visual Map */}
+          {/* Visual Map with Seat Overlay */}
           <div 
             ref={containerRef}
             className="relative bg-muted/20 rounded-[2rem] shadow-xl border overflow-hidden mx-auto flex items-center justify-center"
@@ -109,7 +160,7 @@ export const SeatSelection: React.FC = () => {
             {!layout.base_map_url && (
               <div className="text-center p-8 space-y-2 opacity-30">
                 <ImageIcon className="w-12 h-12 mx-auto" />
-                <p className="text-xs font-medium">Gambar denah belum diatur oleh admin</p>
+                <p className="text-xs font-medium">Denah kursi belum tersedia</p>
               </div>
             )}
             
@@ -117,9 +168,14 @@ export const SeatSelection: React.FC = () => {
               const isOccupied = state.occupiedSeats.includes(seat.id) || seat.status !== 'available';
               const isSelected = state.selectedSeats.includes(seat.id);
               
-              // Calculate scaling ratio based on designer's base width
-              const ratio = containerWidth / (layout.base_width || 800);
-              const baseSeatSize = 32 * (layout.global_scale || 1.0) * ratio;
+              // Calculate dimensions using shared coordinate system (identical to admin editor)
+              const dims = calculateSeatDimensions(
+                containerWidth,
+                layout.base_width || SEAT_LAYOUT_CONSTANTS.BASE_WIDTH,
+                layout.global_scale || SEAT_LAYOUT_CONSTANTS.GLOBAL_SCALE_DEFAULT,
+                seat.seat_width || 1.0,
+                seat.seat_length || 1.0
+              );
 
               return (
                 <button
@@ -138,10 +194,10 @@ export const SeatSelection: React.FC = () => {
                     left: `${seat.x_pos}%`,
                     top: `${seat.y_pos}%`,
                     transform: 'translate(-50%, -50%)',
-                    // Apply dimensions for booking display (relative to 1.0m base)
-                    width: `${baseSeatSize * (seat.seat_width || 1.0)}px`,
-                    height: `${baseSeatSize * (seat.seat_length || 1.0)}px`,
-                    fontSize: `${Math.max(8, 10 * ratio)}px`
+                    // Use dimensions from shared coordinate system (pixel-perfect with admin)
+                    width: `${dims.width}px`,
+                    height: `${dims.height}px`,
+                    fontSize: `${Math.max(8, 10 * dims.ratio)}px`
                   }}
                 >
                   {seat.seat_number}

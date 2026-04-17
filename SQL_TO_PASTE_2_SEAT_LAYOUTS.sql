@@ -1,4 +1,10 @@
 -- ============================================================================
+-- READY TO COPY: Seat Layout Manager Migration
+-- Paste this entire SQL into Supabase Dashboard SQL Editor
+-- IMPORTANT: Run SQL_TO_PASTE_1_USERS_TABLE.sql FIRST!
+-- ============================================================================
+
+-- ============================================================================
 -- Seat Layout Manager Tables
 -- PYU-GO Platform
 -- ============================================================================
@@ -127,3 +133,7 @@ COMMENT ON TABLE public.seat_layouts IS 'Master data for seat layouts with visua
 COMMENT ON TABLE public.seat_categories IS 'Categories for seats like VIP, Regular, etc.';
 COMMENT ON TABLE public.seats IS 'Individual seats within a layout with coordinates';
 COMMENT ON TABLE public.layout_history IS 'History of changes to seat layouts';
+
+-- ============================================================================
+-- If this runs successfully, continue with other migration SQL files
+-- ============================================================================
