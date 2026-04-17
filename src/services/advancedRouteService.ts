@@ -84,7 +84,7 @@ export const AdvancedRouteService = {
 
   /**
    * Get traffic factors based on current time and road conditions
-   * Simulates real-time traffic with realistic patterns
+   * Simulates real-time traffic with realistic patterns and slight randomness
    * @param timeOfDay Hour of day (0-23) for traffic simulation
    * @param scenario Route scenario affecting traffic intensity
    * @returns TrafficFactors with condition and speed reduction
@@ -120,6 +120,10 @@ export const AdvancedRouteService = {
       condition = scenario === 'in-city' ? 'moderate' : 'light';
       speedReduction = scenario === 'in-city' ? 0.75 : 0.9;
     }
+
+    // Add "real-time" variance (±5%)
+    const variance = (Math.random() * 0.1) - 0.05;
+    speedReduction = Math.max(0.1, Math.min(1, speedReduction + variance));
 
     return { timeOfDay: timeCategory, condition, speedReduction };
   },
@@ -219,11 +223,22 @@ export const AdvancedRouteService = {
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
     
     try {
-      const response = await fetch(url, {
-        ...options,
-        signal: controller.signal
-      });
+      // Create a shallow copy of options to safely pass to fetch
+      const fetchOptions: RequestInit = { ...options };
+      
+      // Only attach signal if it's not already aborted (Node/Undici compatibility)
+      if (!controller.signal.aborted) {
+        // In some Node versions, signal might need to be explicitly cast
+        (fetchOptions as any).signal = controller.signal;
+      }
+      
+      const response = await fetch(url, fetchOptions);
       return response;
+    } catch (err) {
+      if (err instanceof Error && err.name === 'AbortError') {
+        throw new Error('Timeout: Layanan tidak merespons dalam waktu yang ditentukan');
+      }
+      throw err;
     } finally {
       clearTimeout(timeoutId);
     }
@@ -231,7 +246,12 @@ export const AdvancedRouteService = {
 
   /**
    * Fetch route from OSRM API with error handling
-   * Calculates distance and estimated time with traffic simulation
+   * Calculates distance and estimated time with traffic simulation.
+   * 
+   * ALGORITHM: This function utilizes the OSRM (Open Source Routing Machine) API, 
+   * which implements the Dijkstra algorithm with Contraction Hierarchies (CH) 
+   * to find the shortest path between coordinates on an actual road network.
+   * 
    * @param start Starting GeoLocation
    * @param end Destination GeoLocation
    * @param timeOfDay Hour (0-23) for traffic simulation
@@ -367,20 +387,26 @@ export const AdvancedRouteService = {
 
   /**
    * Format raw geocoding data into readable address
-   * Prioritizes: road > suburb > city > state
+   * Requirement: (jalan, kelurahan, kota, provinsi)
+   * Prioritizes: road > suburb/village > city/town > state
    * @private
    */
   _formatAddress(data: GeocodingResult): string {
     const addr = data.address;
     const parts: string[] = [];
 
-    // Build address components in priority order
+    // 1. Jalan (Road)
     if (addr.road) parts.push(addr.road);
-    if (addr.suburb) parts.push(addr.suburb);
-    else if (addr.village) parts.push(addr.village);
-    else if (addr.city) parts.push(addr.city);
     
-    if (addr.city && !parts.includes(addr.city)) parts.push(addr.city);
+    // 2. Kelurahan / Suburb (Village/Suburb/Neighbourhood)
+    const kelurahan = addr.suburb || addr.village || addr.neighbourhood || addr.hamlet;
+    if (kelurahan) parts.push(kelurahan);
+    
+    // 3. Kota (City/Town/Municipality)
+    const kota = addr.city || addr.town || addr.municipality || addr.city_district;
+    if (kota && !parts.includes(kota)) parts.push(kota);
+    
+    // 4. Provinsi (State)
     if (addr.state) parts.push(addr.state);
 
     // Return formatted address or fallback to display_name

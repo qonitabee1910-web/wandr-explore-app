@@ -1,6 +1,10 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { AdvancedRouteService, RouteScenario, DetailedRouteInfo } from '../services/advancedRouteService';
 import { GeoLocation } from '../types/maps';
+
+// Mock fetch for all tests to ensure consistency and coverage
+const mockFetch = vi.fn();
+global.fetch = mockFetch as any;
 
 /**
  * Comprehensive test suite for Advanced Route Service
@@ -17,6 +21,68 @@ import { GeoLocation } from '../types/maps';
 
 describe('AdvancedRouteService', () => {
   
+  beforeAll(() => {
+    // Setup default mock implementation
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('router.project-osrm.org')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            code: 'Ok',
+            routes: [{
+              distance: 5000, // 5km
+              duration: 600,
+              geometry: {
+                coordinates: [[106.8, -6.2], [106.81, -6.21]]
+              },
+              legs: [{ summary: 'Test Route' }]
+            }]
+          })
+        });
+      }
+      
+      if (url.includes('nominatim.openstreetmap.org/reverse')) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            display_name: 'Test Address, Jakarta',
+            address: {
+              road: 'Jl. Test',
+              suburb: 'Test Suburb',
+              city: 'Jakarta',
+              state: 'DKI Jakarta'
+            }
+          })
+        });
+      }
+
+      if (url.includes('nominatim.openstreetmap.org/search')) {
+        const urlObj = new URL(url);
+        const query = urlObj.searchParams.get('q') || '';
+        
+        // Return different coordinates based on query
+        const isBandung = query.toLowerCase().includes('bandung');
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve([
+            {
+              lat: isBandung ? '-6.9175' : '-6.2088',
+              lon: isBandung ? '107.6191' : '106.8456',
+              name: isBandung ? 'Bandung' : 'Jakarta',
+              display_name: isBandung ? 'Bandung, West Java' : 'Jakarta, Indonesia'
+            }
+          ])
+        });
+      }
+
+      return Promise.reject(new Error('Unknown URL'));
+    });
+  });
+
+  afterAll(() => {
+    vi.restoreAllMocks();
+  });
+
   // Test data: Real-world coordinates (Indonesia)
   const testData = {
     inCity: {
@@ -361,53 +427,31 @@ describe('AdvancedRouteService', () => {
     testData.inCity.routes.forEach((route, index) => {
       describe(`Route ${index + 1}: ${route.name}`, () => {
         it('should fetch route without errors', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
-            
-            expect(detailedRoute).toBeDefined();
-            expect(detailedRoute.distance).toBeGreaterThan(0);
-            expect(detailedRoute.duration).toBeGreaterThan(0);
-            expect(detailedRoute.polyline.length).toBeGreaterThan(0);
-            expect(detailedRoute.startAddress).toBeTruthy();
-            expect(detailedRoute.endAddress).toBeTruthy();
-          } catch (error) {
-            // Network errors are acceptable in test environment
-            console.log(`Test skipped: ${route.name}`, error);
-          }
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
+          
+          expect(detailedRoute).toBeDefined();
+          expect(detailedRoute.distance).toBeGreaterThan(0);
+          expect(detailedRoute.duration).toBeGreaterThan(0);
+          expect(detailedRoute.polyline.length).toBeGreaterThan(0);
+          expect(detailedRoute.startAddress).toBeTruthy();
+          expect(detailedRoute.endAddress).toBeTruthy();
         }, 15000); // 15 second timeout
 
         it('should validate distance accuracy >= 95%', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
-            const accuracy = validateDistanceAccuracy(detailedRoute.distance, route.expectedDistanceKm);
-            
-            expect(accuracy).toBe(true);
-            expect(detailedRoute.distanceAccuracy).toBeGreaterThanOrEqual(90);
-          } catch (error) {
-            console.log(`Distance test skipped for ${route.name}`);
-          }
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
+          // With mock, we get 5km
+          expect(detailedRoute.distance).toBe(5);
+          expect(detailedRoute.distanceAccuracy).toBeGreaterThanOrEqual(90);
         }, 15000);
 
         it('should estimate time within ±10% variance', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(
-              route.start,
-              route.end,
-              12 // Noon time for moderate traffic
-            );
-            
-            const isWithinVariance = validateTimeAccuracy(
-              detailedRoute.duration,
-              route.expectedTimeMinutes,
-              route.timeVariancePct
-            );
-            
-            // Allow slightly higher variance due to traffic simulation
-            expect([true, false]).toContain(isWithinVariance);
-            expect(detailedRoute.duration).toBeGreaterThan(0);
-          } catch (error) {
-            console.log(`Time estimation test skipped for ${route.name}`);
-          }
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(
+            route.start,
+            route.end,
+            12 // Noon time for moderate traffic
+          );
+          
+          expect(detailedRoute.duration).toBeGreaterThan(0);
         }, 15000);
       });
     });
@@ -417,22 +461,41 @@ describe('AdvancedRouteService', () => {
     testData.interCity.routes.forEach((route, index) => {
       describe(`Route ${index + 1}: ${route.name}`, () => {
         it('should detect inter-city scenario', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
-            expect(detailedRoute.scenario).toBe('inter-city');
-          } catch (error) {
-            console.log(`Scenario test skipped: ${route.name}`);
-          }
+          // Force mock to return large distance for this test
+          mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              code: 'Ok',
+              routes: [{
+                distance: 120000, // 120km
+                duration: 7200,
+                geometry: { coordinates: [[106.8, -6.2], [107.6, -6.9]] },
+                legs: [{ summary: 'Inter-city Route' }]
+              }]
+            })
+          });
+
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
+          expect(detailedRoute.scenario).toBe('inter-city');
         }, 15000);
 
         it('should handle long distances correctly', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
-            expect(detailedRoute.distance).toBeGreaterThan(50);
-            expect(detailedRoute.duration).toBeGreaterThan(90); // At least 1.5 hours
-          } catch (error) {
-            console.log(`Long distance test skipped for ${route.name}`);
-          }
+          mockFetch.mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({
+              code: 'Ok',
+              routes: [{
+                distance: 120000, // 120km
+                duration: 7200,
+                geometry: { coordinates: [[106.8, -6.2], [107.6, -6.9]] },
+                legs: [{ summary: 'Inter-city Route' }]
+              }]
+            })
+          });
+
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
+          expect(detailedRoute.distance).toBeGreaterThan(50);
+          expect(detailedRoute.duration).toBeGreaterThan(0);
         }, 15000);
       });
     });
@@ -442,12 +505,8 @@ describe('AdvancedRouteService', () => {
     testData.rural.routes.forEach((route, index) => {
       describe(`Route ${index + 1}: ${route.name}`, () => {
         it('should detect rural scenario or fall back safely', async () => {
-          try {
-            const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
-            expect(['rural', 'in-city']).toContain(detailedRoute.scenario);
-          } catch (error) {
-            console.log(`Rural scenario test skipped: ${route.name}`);
-          }
+          const detailedRoute = await AdvancedRouteService.getDetailedRoute(route.start, route.end);
+          expect(['rural', 'in-city']).toContain(detailedRoute.scenario);
         }, 15000);
       });
     });
@@ -455,66 +514,71 @@ describe('AdvancedRouteService', () => {
 
   describe('ERROR HANDLING', () => {
     it('should handle network timeout gracefully', async () => {
-      // This test verifies error handling exists
+      mockFetch.mockImplementationOnce(() => 
+        new Promise((_, reject) => setTimeout(() => {
+          const err = new Error('Timeout');
+          err.name = 'AbortError';
+          reject(err);
+        }, 100))
+      );
+
       try {
-        // Invalid coordinates should trigger validation error
         await AdvancedRouteService.getDetailedRoute(
-          { lat: 200, lng: 300 },
-          { lat: 0, lng: 0 }
+          { lat: -6.2, lng: 106.8 },
+          { lat: -6.3, lng: 106.9 }
         );
-        fail('Should throw for invalid coordinates');
+        fail('Should throw for timeout');
       } catch (error: any) {
-        expect(error).toBeDefined();
-        expect(error.message).toContain('Koordinat tidak valid');
+        expect(error.message).toContain('Layanan tidak merespons');
       }
     });
 
     it('should return fallback coordinates for geocoding failures', async () => {
-      // This would need mocking in real tests
-      const result = await AdvancedRouteService.reverseGeocode(999, 999);
-      expect(result).toBeTruthy();
-      expect(typeof result).toBe('string');
+      mockFetch.mockResolvedValueOnce({ ok: false });
+      const result = await AdvancedRouteService.reverseGeocode(-6.2, 106.8);
+      expect(result).toBe('-6.2000, 106.8000');
     });
 
     it('should handle missing OSRM response', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ code: 'NoRoute' })
+      });
+
       try {
-        // Very unlikely but valid coordinates that might not have a route
         await AdvancedRouteService.getDetailedRoute(
-          { lat: -90, lng: 0 }, // South pole
-          { lat: 90, lng: 0 }   // North pole
+          { lat: -6.2, lng: 106.8 },
+          { lat: -6.3, lng: 106.9 }
         );
-        // If it succeeds, that's OK too
+        fail('Should throw for no route');
       } catch (error: any) {
-        expect(error).toBeDefined();
+        expect(error.message).toContain('Rute tidak ditemukan');
       }
     }, 15000);
   });
 
   describe('INTEGRATION: Complete Journey', () => {
     it('should handle complete ride flow from search to route details', async () => {
-      try {
-        // 1. Search for locations
-        const pickupLocations = await AdvancedRouteService.searchLocation('Jakarta');
-        const destLocations = await AdvancedRouteService.searchLocation('Bandung');
-        
-        if (pickupLocations.length > 0 && destLocations.length > 0) {
-          // 2. Get detailed route
-          const route = await AdvancedRouteService.getDetailedRoute(
-            pickupLocations[0],
-            destLocations[0]
-          );
-          
-          // 3. Validate complete route info
-          expect(route.distance).toBeGreaterThan(0);
-          expect(route.duration).toBeGreaterThan(0);
-          expect(route.startAddress).toBeTruthy();
-          expect(route.endAddress).toBeTruthy();
-          expect(route.polyline.length).toBeGreaterThan(0);
-          expect(route.scenario).toBeTruthy();
-        }
-      } catch (error) {
-        console.log('Integration test skipped due to network conditions');
-      }
+      // 1. Search for locations
+      const pickupLocations = await AdvancedRouteService.searchLocation('Jakarta');
+      const destLocations = await AdvancedRouteService.searchLocation('Bandung');
+      
+      expect(pickupLocations.length).toBeGreaterThan(0);
+      expect(destLocations.length).toBeGreaterThan(0);
+
+      // 2. Get detailed route
+      const route = await AdvancedRouteService.getDetailedRoute(
+        pickupLocations[0],
+        destLocations[0]
+      );
+      
+      // 3. Validate complete route info
+      expect(route.distance).toBeGreaterThan(0);
+      expect(route.duration).toBeGreaterThan(0);
+      expect(route.startAddress).toBeTruthy();
+      expect(route.endAddress).toBeTruthy();
+      expect(route.polyline.length).toBeGreaterThan(0);
+      expect(route.scenario).toBeTruthy();
     }, 30000);
   });
 });

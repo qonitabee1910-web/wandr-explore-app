@@ -18,7 +18,12 @@ export interface GeocodingResult {
     road?: string;
     suburb?: string;
     village?: string;
+    neighbourhood?: string;
+    hamlet?: string;
     city?: string;
+    town?: string;
+    municipality?: string;
+    city_district?: string;
     state?: string;
     postcode?: string;
     country?: string;

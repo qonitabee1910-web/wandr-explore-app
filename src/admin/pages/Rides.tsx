@@ -36,8 +36,6 @@ const Rides: React.FC = () => {
       <div style={{ padding: '24px' }}>
         <h1 style={{ marginBottom: '24px', fontSize: '28px', fontWeight: '600' }}>
           Ride Monitoring
-          <h1 style={{ marginBottom: '24px', fontSize: '28px', fontWeight: '600' }}>
-          Ride Monitoring
         </h1>
 
       {error && (

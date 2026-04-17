@@ -67,26 +67,50 @@ export function useAdminAuth(): UseAdminAuthReturn {
         return;
       }
 
-      // Check if user is admin (from auth metadata or claims)
-      const userRole = authUser.user_metadata?.role || 'user';
-      const isUserAdmin = userRole === 'admin';
+      // Check if user is admin from users table (secure approach)
+      // Role stored in users table, NOT user_metadata (which is user-editable)
+      const { data: userProfile, error: profileError } = await supabase
+        .from('users')
+        .select('role, full_name, permissions')
+        .eq('id', authUser.id)
+        .single();
 
-      if (isUserAdmin) {
-        const adminUser: AdminUser = {
-          id: authUser.id,
-          email: authUser.email || '',
-          name: authUser.user_metadata?.name || authUser.email,
-          role: 'admin',
-          permissions: authUser.user_metadata?.permissions || getDefaultAdminPermissions(),
-          createdAt: authUser.created_at,
-        };
-
-        setUser(adminUser);
-        setIsAdmin(true);
-      } else {
+      // Handle case where profile doesn't exist yet
+      if (profileError && profileError.code === 'PGRST116') {
         setIsAdmin(false);
         setUser(null);
+        setError('User profile not found. Please log in again.');
+        return;
       }
+
+      if (profileError || !userProfile) {
+        setIsAdmin(false);
+        setUser(null);
+        setError(profileError?.message || 'Could not verify admin status');
+        return;
+      }
+
+      // Check if user has admin role
+      const adminRole = userProfile.role;
+      const isAdminUser = adminRole && ['admin', 'super_admin', 'moderator'].includes(adminRole);
+      
+      if (!isAdminUser) {
+        setIsAdmin(false);
+        setUser(null);
+        setError('User is not an admin');
+        return;
+      }
+
+      // User is admin - set admin state
+      setIsAdmin(true);
+      setUser({
+        id: authUser.id,
+        email: authUser.email || '',
+        name: userProfile.full_name,
+        role: adminRole as 'admin' | 'super_admin' | 'moderator' | 'analyst',
+        permissions: userProfile.permissions || [],
+        createdAt: authUser.created_at || new Date().toISOString(),
+      });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to verify admin status';
       setError(message);

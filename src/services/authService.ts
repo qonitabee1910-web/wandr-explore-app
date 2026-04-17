@@ -28,34 +28,56 @@ class AuthService {
   async signup(data: SignUpData) {
     try {
       // Register with Supabase Auth
+      // Use localhost for redirect URL - Supabase requires whitelisted domains
+      const redirectUrl = typeof window !== 'undefined'
+        ? (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+            ? `http://localhost:${window.location.port || 8080}/auth/callback`
+            : `${window.location.origin}/auth/callback`)
+        : 'http://localhost:8080/auth/callback';
+      
       const { data: authData, error: authError } = await supabase.auth.signUp({
-        email: data.email,
+        email: data.email.toLowerCase().trim(),
         password: data.password,
         options: {
           data: {
             full_name: data.fullName,
             phone: data.phone,
           },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: redirectUrl,
         },
       });
 
       if (authError) throw authError;
 
-      // Create user profile in public.users
-      if (authData.user) {
+      if (!authData.user) {
+        throw new Error('Signup failed: No user returned');
+      }
+
+      // Attempt to create user profile in public.users
+      // This might fail if RLS policy is too restrictive, which is okay
+      // The profile will be created on first login if it doesn't exist
+      try {
         const { error: profileError } = await supabase
           .from('users')
           .insert({
             id: authData.user.id,
-            email: data.email,
+            email: data.email.toLowerCase(),
             full_name: data.fullName,
-            phone: data.phone,
+            phone_number: data.phone,
             role: 'user',
             status: 'active',
           });
 
-        if (profileError) throw profileError;
+        if (profileError) {
+          // 23505 = unique violation (profile already exists) - this is fine
+          // Other errors should be logged but not throw
+          if (profileError.code !== '23505') {
+            console.warn('Warning: Could not create profile during signup:', profileError);
+          }
+        }
+      } catch (profileCreateError) {
+        // Log but don't block signup
+        console.warn('Profile creation during signup failed (this is okay):', profileCreateError);
       }
 
       return {
@@ -77,20 +99,56 @@ class AuthService {
   async login(data: LoginData) {
     try {
       const { data: authData, error } = await supabase.auth.signInWithPassword({
-        email: data.email,
+        email: data.email.toLowerCase().trim(),
         password: data.password,
       });
 
       if (error) throw error;
 
+      if (!authData.user) {
+        throw new Error('Login failed: No user returned');
+      }
+
       // Get user profile
-      const { data: userProfile, error: profileError } = await supabase
+      let userProfile = null;
+      const { data: existingProfile, error: profileError } = await supabase
         .from('users')
         .select('*')
-        .eq('id', authData.user!.id)
+        .eq('id', authData.user.id)
         .single();
 
-      if (profileError) throw profileError;
+      if (profileError) {
+        // If profile doesn't exist (404), create it
+        if (profileError.code === 'PGRST116') {
+          try {
+            const { error: createError } = await supabase
+              .from('users')
+              .insert({
+                id: authData.user.id,
+                email: (authData.user.email || data.email).toLowerCase(),
+                full_name: authData.user.user_metadata?.full_name || '',
+                phone_number: authData.user.user_metadata?.phone,
+                role: 'user',
+                status: 'active',
+              });
+
+            if (createError) {
+              // 23505 = duplicate key (already exists, race condition)
+              if (createError.code !== '23505') {
+                console.warn('Warning: Could not create profile during login:', createError);
+              }
+              // Don't block login, just proceed without profile
+            }
+          } catch (createErr) {
+            console.warn('Profile creation during login failed:', createErr);
+          }
+        } else {
+          // 406 or other errors - don't block login
+          console.warn('Profile fetch error (non-blocking):', profileError);
+        }
+      } else {
+        userProfile = existingProfile;
+      }
 
       return {
         success: true,
@@ -141,7 +199,7 @@ class AuthService {
         id: user.id,
         email: user.email || '',
         fullName: profile?.full_name,
-        phone: profile?.phone,
+        phone: profile?.phone_number,
         avatar: profile?.profile_picture_url,
         role: profile?.role || 'user',
       };
@@ -209,7 +267,7 @@ class AuthService {
         .from('users')
         .update({
           full_name: data.fullName,
-          phone: data.phone,
+          phone_number: data.phone,
           profile_picture_url: data.avatar,
         })
         .eq('id', user.id);

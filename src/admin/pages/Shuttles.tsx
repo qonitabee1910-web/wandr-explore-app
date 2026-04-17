@@ -32,7 +32,8 @@ const Shuttles: React.FC = () => {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
+    <ProtectedAdminPage>
+      <div style={{ padding: '24px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
         <h1 style={{ fontSize: '28px', fontWeight: '600' }}>Shuttle Management</h1>
         <button
