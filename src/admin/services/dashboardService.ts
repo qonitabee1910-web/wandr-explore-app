@@ -17,30 +17,31 @@ export const dashboardService = {
         .from('rides')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch total shuttles
+      // Fetch total shuttles (using shuttle_routes as a proxy or 0 if no shuttles table)
       const { count: totalShuttles } = await supabase
-        .from('shuttles')
+        .from('shuttle_routes')
         .select('*', { count: 'exact', head: true });
 
-      // Fetch total drivers
+      // Fetch total drivers (drivers are users with role 'driver')
       const { count: totalDrivers } = await supabase
-        .from('drivers')
-        .select('*', { count: 'exact', head: true });
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver');
 
       // Fetch active users (users with rides in last 24 hours)
       const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
       const { count: activeUsers } = await supabase
         .from('rides')
-        .select('user_id', { count: 'exact', head: true })
+        .select('passenger_id', { count: 'exact', head: true })
         .gte('created_at', oneDayAgo);
 
       // Fetch total revenue
       const { data: rideData } = await supabase
         .from('rides')
-        .select('fare')
+        .select('total_fare')
         .eq('status', 'completed');
 
-      const totalRevenue = (rideData || []).reduce((sum, ride) => sum + (ride.fare || 0), 0);
+      const totalRevenue = (rideData || []).reduce((sum, ride) => sum + (Number(ride.total_fare) || 0), 0);
 
       // Fetch completed rides
       const { count: completedRides } = await supabase
@@ -48,17 +49,18 @@ export const dashboardService = {
         .select('*', { count: 'exact', head: true })
         .eq('status', 'completed');
 
-      // Fetch pending approvals (drivers)
+      // Fetch pending approvals (drivers with status 'pending')
       const { count: pendingApprovals } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver')
         .eq('status', 'pending');
 
       // Fetch canceled rides
       const { count: canceledRides } = await supabase
         .from('rides')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'canceled');
+        .eq('status', 'cancelled');
 
       const stats: DashboardStats = {
         totalRides: totalRides || 0,
@@ -93,7 +95,7 @@ export const dashboardService = {
 
       const { data, error } = await supabase
         .from('rides')
-        .select('created_at, fare')
+        .select('created_at, total_fare')
         .gte('created_at', startDate.toISOString())
         .order('created_at', { ascending: true });
 
@@ -107,7 +109,7 @@ export const dashboardService = {
         const current = groupedData.get(date) || { rides: 0, revenue: 0 };
         groupedData.set(date, {
           rides: current.rides + 1,
-          revenue: current.revenue + (ride.fare || 0),
+          revenue: current.revenue + (Number(ride.total_fare) || 0),
         });
       });
 
@@ -138,7 +140,7 @@ export const dashboardService = {
     try {
       const { data, error } = await supabase
         .from('rides')
-        .select('created_at, fare')
+        .select('created_at, total_fare')
         .gte('created_at', startDate.toISOString())
         .lte('created_at', endDate.toISOString())
         .order('created_at', { ascending: true });
@@ -153,7 +155,7 @@ export const dashboardService = {
         const current = groupedData.get(date) || { rides: 0, revenue: 0 };
         groupedData.set(date, {
           rides: current.rides + 1,
-          revenue: current.revenue + (ride.fare || 0),
+          revenue: current.revenue + (Number(ride.total_fare) || 0),
         });
       });
 
@@ -206,28 +208,30 @@ export const dashboardService = {
       const { count: canceledRides } = await supabase
         .from('rides')
         .select('*', { count: 'exact', head: true })
-        .eq('status', 'canceled')
+        .eq('status', 'cancelled')
         .gte('created_at', startISO)
         .lte('created_at', endISO);
 
       // Calculate revenue in range
-      const totalRevenue = (rides || []).reduce((sum, ride) => sum + (ride.fare || 0), 0);
+      const totalRevenue = (rides || []).reduce((sum, ride) => sum + (Number(ride.total_fare) || 0), 0);
 
       // Unique users in range
-      const uniqueUsers = new Set((rides || []).map((r) => r.user_id)).size;
+      const uniqueUsers = new Set((rides || []).map((r) => r.passenger_id)).size;
 
       // Get current totals (not just range)
       const { count: totalDrivers } = await supabase
-        .from('drivers')
-        .select('*', { count: 'exact', head: true });
+        .from('users')
+        .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver');
 
       const { count: totalShuttles } = await supabase
-        .from('shuttles')
+        .from('shuttle_routes')
         .select('*', { count: 'exact', head: true });
 
       const { count: pendingApprovals } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver')
         .eq('status', 'pending');
 
       const stats: DashboardStats = {
@@ -260,16 +264,16 @@ export const dashboardService = {
     try {
       const { data: rideData, error } = await supabase
         .from('rides')
-        .select('status, fare, rating, created_at, started_at');
+        .select('status, total_fare, passenger_rating, driver_rating, created_at, started_at');
 
       if (error) throw error;
 
       const rides = rideData || [];
       const completedRides = rides.filter((r) => r.status === 'completed');
-      const canceledRides = rides.filter((r) => r.status === 'canceled');
+      const canceledRides = rides.filter((r) => r.status === 'cancelled');
       const ratings = completedRides
-        .filter((r) => r.rating)
-        .map((r) => r.rating);
+        .filter((r) => r.passenger_rating)
+        .map((r) => Number(r.passenger_rating));
 
       const metrics = {
         totalRides: rides.length,
@@ -280,7 +284,7 @@ export const dashboardService = {
           ? (ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2)
           : 0,
         averageFare: rides.length > 0
-          ? (rides.reduce((sum, r) => sum + (r.fare || 0), 0) / rides.length).toFixed(2)
+          ? (rides.reduce((sum, r) => sum + (Number(r.total_fare) || 0), 0) / rides.length).toFixed(2)
           : 0,
       };
 

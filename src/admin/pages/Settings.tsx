@@ -22,7 +22,7 @@ const Settings: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await settingsService.getAppSettings();
-      setAppSettings(data);
+      setAppSettings(data.data || null);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch settings';
       setError(message);

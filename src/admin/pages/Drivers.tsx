@@ -22,7 +22,7 @@ const Drivers: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await driverService.getDrivers();
-      setDrivers(data.data || []);
+      setDrivers(data.data?.data || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch drivers';
       setError(message);
@@ -79,9 +79,9 @@ const Drivers: React.FC = () => {
                   </td>
                 </tr>
               ) : (
-                drivers.map((driver) => (
+                drivers.map((driver: any) => (
                   <tr key={driver.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
-                    <td style={{ padding: '12px' }}>{driver.name}</td>
+                    <td style={{ padding: '12px' }}>{driver.full_name || driver.name}</td>
                     <td style={{ padding: '12px' }}>{driver.email}</td>
                     <td style={{ padding: '12px' }}>
                       <span
@@ -90,13 +90,13 @@ const Drivers: React.FC = () => {
                           borderRadius: '4px',
                           fontSize: '12px',
                           backgroundColor:
-                            driver.status === 'approved'
+                            driver.status === 'active' || driver.status === 'approved'
                               ? '#d1fae5'
                               : driver.status === 'pending'
                               ? '#fef3c7'
                               : '#fee2e2',
                           color:
-                            driver.status === 'approved'
+                            driver.status === 'active' || driver.status === 'approved'
                               ? '#065f46'
                               : driver.status === 'pending'
                               ? '#92400e'
@@ -106,7 +106,7 @@ const Drivers: React.FC = () => {
                         {driver.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px' }}>⭐ {driver.rating}</td>
+                    <td style={{ padding: '12px' }}>⭐ {driver.rating || '5.0'}</td>
                     <td style={{ padding: '12px' }}>
                       <button
                         onClick={() => console.log('View driver:', driver.id)}

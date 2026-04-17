@@ -22,7 +22,7 @@ const Rides: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await rideService.getRides();
-      setRides(data.data || []);
+      setRides(data.data?.data || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch rides';
       setError(message);
@@ -83,7 +83,7 @@ const Rides: React.FC = () => {
                 rides.map((ride) => (
                   <tr key={ride.id} style={{ borderBottom: '1px solid #f3f4f6' }}>
                     <td style={{ padding: '12px', fontSize: '12px' }}>{ride.id.slice(0, 8)}</td>
-                    <td style={{ padding: '12px' }}>{ride.user_id.slice(0, 8)}</td>
+                    <td style={{ padding: '12px' }}>{ride.passenger_id?.slice(0, 8) || '-'}</td>
                     <td style={{ padding: '12px' }}>{ride.driver_id?.slice(0, 8) || '-'}</td>
                     <td style={{ padding: '12px' }}>
                       <span
@@ -94,13 +94,13 @@ const Rides: React.FC = () => {
                           backgroundColor:
                             ride.status === 'completed'
                               ? '#d1fae5'
-                              : ride.status === 'active'
+                              : ride.status === 'started' || ride.status === 'accepted'
                               ? '#bfdbfe'
                               : '#fef3c7',
                           color:
                             ride.status === 'completed'
                               ? '#065f46'
-                              : ride.status === 'active'
+                              : ride.status === 'started' || ride.status === 'accepted'
                               ? '#1e40af'
                               : '#92400e',
                         }}
@@ -108,7 +108,7 @@ const Rides: React.FC = () => {
                         {ride.status}
                       </span>
                     </td>
-                    <td style={{ padding: '12px' }}>IDR {ride.fare.toLocaleString()}</td>
+                    <td style={{ padding: '12px' }}>IDR {Number(ride.total_fare || 0).toLocaleString()}</td>
                     <td style={{ padding: '12px' }}>
                       <button
                         onClick={() => console.log('View ride:', ride.id)}

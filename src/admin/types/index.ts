@@ -49,7 +49,8 @@ export interface DashboardChartData {
 export interface Driver {
   id: string;
   user_id: string;
-  name: string;
+  full_name: string;
+  name: string; // Keep for backward compatibility if needed
   email: string;
   phone: string;
   avatar_url?: string;
@@ -57,7 +58,7 @@ export interface Driver {
   license_number: string;
   license_expiry: string;
   vehicle_type: 'ride' | 'shuttle';
-  status: 'pending' | 'approved' | 'rejected' | 'suspended';
+  status: 'pending' | 'active' | 'approved' | 'rejected' | 'suspended';
   approval_date?: string;
   approved_by?: string;
   documents: DriverDocument[];
@@ -92,19 +93,24 @@ export interface DriverApprovalRequest {
 export interface Ride {
   id: string;
   driver_id: string;
-  user_id: string;
+  passenger_id: string;
+  user_id: string; // Keep for backward compatibility
   pickup_location: Location;
   dropoff_location: Location;
-  status: 'requested' | 'accepted' | 'in_progress' | 'completed' | 'canceled';
+  status: 'requested' | 'accepted' | 'started' | 'in_progress' | 'completed' | 'cancelled' | 'canceled';
   ride_type: 'regular' | 'shared';
-  fare: number;
+  total_fare: number;
+  fare: number; // Keep for backward compatibility
   distance: number;
   duration: number; // in seconds
-  rating?: number;
+  passenger_rating?: number;
+  driver_rating?: number;
+  rating?: number; // Keep for backward compatibility
   feedback?: string;
   started_at?: string;
   completed_at?: string;
-  canceled_at?: string;
+  cancelled_at?: string;
+  canceled_at?: string; // Keep for backward compatibility
   cancellation_reason?: string;
   created_at: string;
   updated_at: string;
@@ -401,7 +407,8 @@ export interface AdMetrics {
 export interface AdminUser {
   id: string;
   email: string;
-  name: string;
+  fullName: string;
+  name: string; // Keep for backward compatibility
   role: 'super_admin' | 'admin' | 'moderator' | 'analyst';
   permissions: string[];
   status: 'active' | 'inactive';

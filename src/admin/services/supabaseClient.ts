@@ -1,22 +1,16 @@
 /**
  * Supabase Admin Client
  * Centralized connection to Supabase for admin dashboard
+ * Re-exports from global supabase client to avoid multiple instances
  */
 
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
-
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase credentials not configured in environment');
-}
+import { supabase } from '@/lib/supabase';
 
 /**
  * Supabase client instance
  * Use this for all admin dashboard database operations
  */
-export const supabase = createClient(supabaseUrl, supabaseKey);
+export { supabase };
 
 /**
  * Helper to handle Supabase errors consistently
@@ -40,7 +34,6 @@ export const checkAdminAuth = async () => {
     if (error || !session) {
       throw new Error('Not authenticated');
     }
-    // Optional: Add admin role check here
     return session;
   } catch (error) {
     throw new Error(handleSupabaseError(error));

@@ -6,15 +6,9 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/lib/supabase';
+import { AdminUser } from '../types/index';
 
-export interface AdminUser {
-  id: string;
-  email: string;
-  name?: string;
-  role: 'admin' | 'user';
-  permissions: string[];
-  createdAt: string;
-}
+export type { AdminUser };
 
 interface UseAdminAuthReturn {
   isAdmin: boolean;
@@ -71,7 +65,7 @@ export function useAdminAuth(): UseAdminAuthReturn {
       // Role stored in users table, NOT user_metadata (which is user-editable)
       const { data: userProfile, error: profileError } = await supabase
         .from('users')
-        .select('role, full_name, permissions')
+        .select('role, full_name')
         .eq('id', authUser.id)
         .single();
 
@@ -106,10 +100,13 @@ export function useAdminAuth(): UseAdminAuthReturn {
       setUser({
         id: authUser.id,
         email: authUser.email || '',
+        fullName: userProfile.full_name,
         name: userProfile.full_name,
         role: adminRole as 'admin' | 'super_admin' | 'moderator' | 'analyst',
-        permissions: userProfile.permissions || [],
-        createdAt: authUser.created_at || new Date().toISOString(),
+        permissions: [],
+        status: 'active',
+        created_at: authUser.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to verify admin status';
@@ -129,11 +126,20 @@ export function useAdminAuth(): UseAdminAuthReturn {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[AdminAuth] Event: ${event}`);
+      
       if (event === 'SIGNED_OUT' || !session) {
         setIsAdmin(false);
         setUser(null);
-      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') {
+        setIsLoading(false);
+      } else if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
         await fetchAdminUser();
+      } else if (event === 'INITIAL_SESSION') {
+        if (session) {
+          await fetchAdminUser();
+        } else {
+          setIsLoading(false);
+        }
       }
     });
 

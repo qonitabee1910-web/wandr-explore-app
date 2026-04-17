@@ -22,7 +22,7 @@ const Shuttles: React.FC = () => {
       setLoading(true);
       setError(null);
       const data = await shuttleService.getShuttles();
-      setShuttles(data.data || []);
+      setShuttles(data.data?.data || []);
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Failed to fetch shuttles';
       setError(message);

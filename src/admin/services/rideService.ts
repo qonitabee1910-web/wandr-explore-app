@@ -10,13 +10,13 @@ export const rideService = {
   /**
    * Get all rides with pagination and filters
    */
-  async getRides(filters: RideFilter): Promise<ApiResponse<PaginatedResponse<Ride>>> {
+  async getRides(filters: RideFilter = {}): Promise<ApiResponse<PaginatedResponse<Ride>>> {
     try {
       let query = supabase.from('rides').select('*', { count: 'exact' });
 
       // Apply filters
       if (filters.search) {
-        query = query.or(`driver_id.ilike.%${filters.search}%,user_id.ilike.%${filters.search}%`);
+        query = query.or(`driver_id.ilike.%${filters.search}%,passenger_id.ilike.%${filters.search}%`);
       }
 
       if (filters.status) {
@@ -28,11 +28,11 @@ export const rideService = {
       }
 
       if (filters.minFare !== undefined) {
-        query = query.gte('fare', filters.minFare);
+        query = query.gte('total_fare', filters.minFare);
       }
 
       if (filters.maxFare !== undefined) {
-        query = query.lte('fare', filters.maxFare);
+        query = query.lte('total_fare', filters.maxFare);
       }
 
       if (filters.startDate) {
@@ -116,8 +116,8 @@ export const rideService = {
 
       // Get driver info
       const { data: driverData, error: driverError } = await supabase
-        .from('drivers')
-        .select('name, rating')
+        .from('users')
+        .select('full_name, rating')
         .eq('id', rideData.driver_id)
         .single();
 
@@ -132,7 +132,7 @@ export const rideService = {
           longitude: 0,
           address: 'Fetching location...',
         },
-        driver_name: driverData.name,
+        driver_name: driverData.full_name,
         driver_rating: driverData.rating,
         vehicle_info: 'Vehicle info from ride data',
         estimated_arrival: 600, // in seconds
@@ -202,19 +202,19 @@ export const rideService = {
 
       const rides = data || [];
       const completed = rides.filter((r) => r.status === 'completed');
-      const canceled = rides.filter((r) => r.status === 'canceled');
-      const ratings = completed.filter((r) => r.rating).map((r) => r.rating);
+      const canceled = rides.filter((r) => r.status === 'cancelled');
+      const ratings = completed.filter((r) => r.passenger_rating).map((r) => Number(r.passenger_rating));
 
       const stats = {
         totalRides: rides.length,
         completedRides: completed.length,
         canceledRides: canceled.length,
-        totalRevenue: parseFloat(rides.reduce((sum, r) => sum + (r.fare || 0), 0).toFixed(2)),
+        totalRevenue: parseFloat(rides.reduce((sum, r) => sum + (Number(r.total_fare) || 0), 0).toFixed(2)),
         averageRating: ratings.length > 0
           ? parseFloat((ratings.reduce((a, b) => a + b, 0) / ratings.length).toFixed(2))
           : 0,
         averageFare: rides.length > 0
-          ? parseFloat((rides.reduce((sum, r) => sum + (r.fare || 0), 0) / rides.length).toFixed(2))
+          ? parseFloat((rides.reduce((sum, r) => sum + (Number(r.total_fare) || 0), 0) / rides.length).toFixed(2))
           : 0,
       };
 
@@ -238,8 +238,8 @@ export const rideService = {
       const { data, error } = await supabase
         .from('rides')
         .update({
-          status: 'canceled',
-          canceled_at: new Date().toISOString(),
+          status: 'cancelled',
+          cancelled_at: new Date().toISOString(),
           cancellation_reason: reason,
         })
         .eq('id', rideId)

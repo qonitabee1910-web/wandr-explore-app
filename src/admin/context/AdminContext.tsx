@@ -5,7 +5,7 @@
  */
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabase';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAdminAuth, AdminUser } from '../hooks/useAdminAuth';
 
 interface AdminContextType {
@@ -27,13 +27,6 @@ interface AdminProviderProps {
 /**
  * Admin Context Provider
  * Wrap your admin routes with this provider
- *
- * Usage:
- * ```typescript
- * <AdminProvider>
- *   <AdminRouter />
- * </AdminProvider>
- * ```
  */
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const authData = useAdminAuth();
@@ -48,11 +41,6 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 /**
  * Hook to use Admin Context
  * Must be called inside AdminProvider
- *
- * Usage:
- * ```typescript
- * const { isAdmin, user, canAccess } = useAdminContext();
- * ```
  */
 export const useAdminContext = (): AdminContextType => {
   const context = useContext(AdminContext);
@@ -77,23 +65,7 @@ export const ProtectedAdminPage: React.FC<ProtectedPageProps> = ({
   requiredPermission,
 }) => {
   const { isAdmin, isLoading, canAccess, user } = useAdminContext();
-  const [authorized, setAuthorized] = useState(false);
-
-  useEffect(() => {
-    if (isLoading) return;
-
-    if (!isAdmin) {
-      window.location.href = '/login';
-      return;
-    }
-
-    if (requiredPermission && !canAccess(requiredPermission)) {
-      window.location.href = '/';
-      return;
-    }
-
-    setAuthorized(true);
-  }, [isAdmin, isLoading, requiredPermission, canAccess]);
+  const location = useLocation();
 
   if (isLoading) {
     return (
@@ -124,8 +96,13 @@ export const ProtectedAdminPage: React.FC<ProtectedPageProps> = ({
     );
   }
 
-  if (!authorized) {
-    return null;
+  if (!isAdmin) {
+    // Save the attempted path to redirect back after login if possible
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (requiredPermission && !canAccess(requiredPermission)) {
+    return <Navigate to="/" replace />;
   }
 
   return <>{children}</>;

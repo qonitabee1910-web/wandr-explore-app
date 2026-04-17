@@ -5,6 +5,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Bell, User, LogOut, Settings, Sun, Moon } from 'lucide-react';
+import { useAdminContext } from '../context/AdminContext';
 import './Topbar.css';
 
 interface TopbarProps {
@@ -12,16 +13,29 @@ interface TopbarProps {
   userRole?: string;
 }
 
-export const Topbar: React.FC<TopbarProps> = ({ userName = 'Admin User', userRole = 'Super Admin' }) => {
+export const Topbar: React.FC<TopbarProps> = ({ 
+  userName: propUserName, 
+  userRole: propUserRole 
+}) => {
   const navigate = useNavigate();
+  const { user, logout } = useAdminContext();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notifications, setNotifications] = useState(3);
 
-  const handleLogout = () => {
-    // Implement logout logic
-    localStorage.removeItem('admin_token');
-    navigate('/admin/login');
+  // Use user from context if available
+  const userName = user?.fullName || propUserName || 'Admin User';
+  const userRole = user?.role || propUserRole || 'Super Admin';
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Fallback redirect
+      navigate('/login');
+    }
   };
 
   const handleNotificationClick = () => {

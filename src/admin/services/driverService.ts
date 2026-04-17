@@ -10,13 +10,13 @@ export const driverService = {
   /**
    * Get all drivers with pagination and filters
    */
-  async getDrivers(filters: DriverFilter): Promise<ApiResponse<PaginatedResponse<Driver>>> {
+  async getDrivers(filters: DriverFilter = {}): Promise<ApiResponse<PaginatedResponse<Driver>>> {
     try {
-      let query = supabase.from('drivers').select('*', { count: 'exact' });
+      let query = supabase.from('users').select('*', { count: 'exact' }).eq('role', 'driver');
 
       // Apply filters
       if (filters.search) {
-        query = query.or(`name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
+        query = query.or(`full_name.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
       }
 
       if (filters.approvalStatus) {
@@ -70,9 +70,10 @@ export const driverService = {
   async getDriver(driverId: string): Promise<ApiResponse<Driver>> {
     try {
       const { data, error } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*')
         .eq('id', driverId)
+        .eq('role', 'driver')
         .single();
 
       if (error) throw error;
@@ -94,16 +95,14 @@ export const driverService = {
    */
   async approveDriver(request: DriverApprovalRequest): Promise<ApiResponse<Driver>> {
     try {
-      const { data: adminUser } = await supabase.auth.getUser();
-
       const { data, error } = await supabase
-        .from('drivers')
+        .from('users')
         .update({
-          status: request.approved ? 'approved' : 'rejected',
-          approval_date: new Date().toISOString(),
-          approved_by: adminUser?.user?.id,
+          status: request.approved ? 'active' : 'inactive',
+          updated_at: new Date().toISOString(),
         })
         .eq('id', request.driver_id)
+        .eq('role', 'driver')
         .select()
         .single();
 
@@ -127,16 +126,17 @@ export const driverService = {
    */
   async updateDriverStatus(
     driverId: string,
-    status: 'suspended' | 'approved' | 'inactive'
+    status: 'suspended' | 'active' | 'inactive'
   ): Promise<ApiResponse<Driver>> {
     try {
       const { data, error } = await supabase
-        .from('drivers')
+        .from('users')
         .update({
           status,
           updated_at: new Date().toISOString(),
         })
         .eq('id', driverId)
+        .eq('role', 'driver')
         .select()
         .single();
 
@@ -161,8 +161,9 @@ export const driverService = {
   async getPendingApprovals(limit: number = 10): Promise<ApiResponse<Driver[]>> {
     try {
       const { data, error } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*')
+        .eq('role', 'driver')
         .eq('status', 'pending')
         .order('created_at', { ascending: true })
         .limit(limit);
@@ -187,7 +188,7 @@ export const driverService = {
   async getDriverStats(): Promise<
     ApiResponse<{
       totalDrivers: number;
-      approvedDrivers: number;
+      activeDrivers: number;
       pendingDrivers: number;
       suspendedDrivers: number;
       rideDrivers: number;
@@ -195,36 +196,39 @@ export const driverService = {
     }>
   > {
     try {
-      const statuses = ['approved', 'pending', 'suspended'];
+      const statuses = ['active', 'pending', 'suspended'];
       const stats: any = {
         totalDrivers: 0,
-        approvedDrivers: 0,
+        activeDrivers: 0,
         pendingDrivers: 0,
         suspendedDrivers: 0,
       };
 
       for (const status of statuses) {
         const { count } = await supabase
-          .from('drivers')
+          .from('users')
           .select('*', { count: 'exact', head: true })
+          .eq('role', 'driver')
           .eq('status', status);
 
-        if (status === 'approved') stats.approvedDrivers = count || 0;
+        if (status === 'active') stats.activeDrivers = count || 0;
         if (status === 'pending') stats.pendingDrivers = count || 0;
         if (status === 'suspended') stats.suspendedDrivers = count || 0;
       }
 
       const { count: rideCount } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver')
         .eq('vehicle_type', 'ride');
 
       const { count: shuttleCount } = await supabase
-        .from('drivers')
+        .from('users')
         .select('*', { count: 'exact', head: true })
+        .eq('role', 'driver')
         .eq('vehicle_type', 'shuttle');
 
-      stats.totalDrivers = (stats.approvedDrivers || 0) + (stats.pendingDrivers || 0) + (stats.suspendedDrivers || 0);
+      stats.totalDrivers = (stats.activeDrivers || 0) + (stats.pendingDrivers || 0) + (stats.suspendedDrivers || 0);
       stats.rideDrivers = rideCount || 0;
       stats.shuttleDrivers = shuttleCount || 0;
 
