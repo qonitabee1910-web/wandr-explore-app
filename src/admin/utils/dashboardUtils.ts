@@ -240,11 +240,13 @@ export const groupAnalyticsByPeriod = (data: AnalyticsData[], period: 'day' | 'w
     }
 
     if (!grouped[key]) {
-      grouped[key] = { date: key, rides: 0, revenue: 0 };
+      grouped[key] = { date: key, rides: 0, revenue: 0, users: 0, shuttles: 0 };
     }
 
     grouped[key].rides += item.rides;
     grouped[key].revenue += item.revenue;
+    grouped[key].users += item.users ?? 0;
+    grouped[key].shuttles += item.shuttles ?? 0;
   });
 
   return Object.values(grouped).sort((a, b) => a.date.localeCompare(b.date));

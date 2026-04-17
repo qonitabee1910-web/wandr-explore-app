@@ -57,7 +57,7 @@ const DriverDashboard = () => {
                 <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Rating</span>
               </div>
               <p className="text-xl font-black text-primary">
-                {user?.rating || '5.0'}
+                {(user as any)?.rating || '5.0'}
               </p>
             </CardContent>
           </Card>
