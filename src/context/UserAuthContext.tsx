@@ -13,6 +13,7 @@ interface UserAuthContextType {
   user: AuthUser | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  isAdmin: boolean;
   error: string | null;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
@@ -24,14 +25,14 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const loadProfile = useCallback(async (authUser: { id: string; email?: string | null; user_metadata?: Record<string, any> }) => {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('full_name, phone, avatar_url')
-      .eq('id', authUser.id)
-      .maybeSingle();
+    const [{ data: profile }, { data: roles }] = await Promise.all([
+      supabase.from('profiles').select('full_name, phone, avatar_url').eq('id', authUser.id).maybeSingle(),
+      supabase.from('user_roles').select('role').eq('user_id', authUser.id),
+    ]);
 
     setUser({
       id: authUser.id,
@@ -41,22 +42,21 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       avatar: profile?.avatar_url || undefined,
     });
     setIsAuthenticated(true);
+    setIsAdmin((roles ?? []).some((r) => r.role === 'admin'));
   }, []);
 
   useEffect(() => {
-    // Set up listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
-        // Defer profile fetch to avoid blocking the auth callback
         setTimeout(() => loadProfile(session.user), 0);
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        setIsAdmin(false);
       }
       setIsLoading(false);
     });
 
-    // Then check existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         loadProfile(session.user).finally(() => setIsLoading(false));
@@ -73,6 +73,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       await supabase.auth.signOut();
       setUser(null);
       setIsAuthenticated(false);
+      setIsAdmin(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Logout failed');
     }
@@ -84,7 +85,7 @@ export const UserAuthProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <UserAuthContext.Provider value={{ user, isLoading, isAuthenticated, error, logout, refreshUser }}>
+    <UserAuthContext.Provider value={{ user, isLoading, isAuthenticated, isAdmin, error, logout, refreshUser }}>
       {children}
     </UserAuthContext.Provider>
   );
